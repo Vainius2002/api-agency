@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}{{ brand.name }} - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
+    <div>
+        <h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ brand.name }}</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">
+            {{ brand.company.name }}
+            {% if brand.status == 'active' %}
+                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Active
+                </span>
+            {% else %}
+                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    Inactive
+                </span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="mt-3 flex sm:mt-0 sm:ml-4 space-x-3">
+        <a href="{{ url_for('clients.assign_team', brand_id=brand.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <i class="fas fa-users mr-2"></i> Manage Team
+        </a>
+        <a href="{{ url_for('clients.planning_info', brand_id=brand.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <i class="fas fa-clipboard-list mr-2"></i> Planning Info
+        </a>
+        <a href="{{ url_for('clients.add_status_update', brand_id=brand.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+            <i class="fas fa-comment-dots mr-2"></i> Add Status Update
+        </a>
+    </div>
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Team Members</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <ul class="divide-y divide-gray-200">
+                {% for assignment in brand.team_members %}
+                <li class="px-4 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">
+                                {{ assignment.team_member.first_name }} {{ assignment.team_member.last_name }}
+                            </p>
+                            <p class="text-sm text-gray-500">{{ assignment.team_member.role.replace('_', ' ').title() }}</p>
+                        </div>
+                        {% if assignment.is_key_responsible %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                Key Responsible
+                            </span>
+                        {% endif %}
+                    </div>
+                </li>
+                {% else %}
+                <li class="px-4 py-4 text-sm text-gray-500">No team assigned yet</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Contacts</h3>
+            <a href="{{ url_for('clients.new_contact', brand_id=brand.id) }}" class="text-sm text-indigo-600 hover:text-indigo-500">
+                <i class="fas fa-plus mr-1"></i> Add Contact
+            </a>
+        </div>
+        <div class="border-t border-gray-200">
+            <ul class="divide-y divide-gray-200">
+                {% for contact in brand.contacts %}
+                <li class="px-4 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">
+                                {{ contact.first_name }} {{ contact.last_name }}
+                            </p>
+                            <p class="text-sm text-gray-500">{{ contact.email }}</p>
+                        </div>
+                        <a href="{{ url_for('clients.contact_detail', contact_id=contact.id) }}" class="text-indigo-600 hover:text-indigo-900 text-sm">
+                            View →
+                        </a>
+                    </div>
+                </li>
+                {% else %}
+                <li class="px-4 py-4 text-sm text-gray-500">No contacts associated</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="mt-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Planning Information</h3>
+            <a href="{{ url_for('clients.planning_info', brand_id=brand.id) }}" class="text-sm text-indigo-600 hover:text-indigo-500">
+                <i class="fas fa-plus mr-1"></i> Add Planning Info
+            </a>
+        </div>
+        <div class="border-t border-gray-200">
+            {% if brand.planning_info %}
+                <ul class="divide-y divide-gray-200">
+                    {% for planning in brand.planning_info %}
+                    <li class="px-4 py-3">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900">{{ planning.comments }}</p>
+                                <div class="mt-1 flex items-center space-x-2 text-xs text-gray-500">
+                                    <span>{{ planning.created_at.strftime('%Y-%m-%d') }}</span>
+                                    <span>•</span>
+                                    <span>{{ planning.created_by.first_name }} {{ planning.created_by.last_name }}</span>
+                                    {% if planning.attachments %}
+                                        <span>•</span>
+                                        {% for attachment in planning.attachments %}
+                                            <a href="{{ url_for('clients.uploaded_file', filename=attachment.file_path) }}" 
+                                               target="_blank"
+                                               class="text-indigo-600 hover:text-indigo-500">
+                                                <i class="fas fa-paperclip"></i> {{ attachment.filename }}
+                                            </a>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="px-4 py-4 text-sm text-gray-500">No planning information added yet</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Key Meetings</h3>
+            <a href="{{ url_for('clients.add_meeting', brand_id=brand.id) }}" class="text-sm text-indigo-600 hover:text-indigo-500">
+                <i class="fas fa-plus mr-1"></i> Add Meeting
+            </a>
+        </div>
+        <div class="border-t border-gray-200">
+            <ul class="divide-y divide-gray-200">
+                {% for meeting in brand.key_meetings %}
+                <li class="px-4 py-3">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">{{ meeting.date.strftime('%Y-%m-%d') }}</p>
+                        <p class="text-sm text-gray-700">{{ meeting.comment }}</p>
+                        <div class="mt-1 flex items-center space-x-2 text-xs text-gray-500">
+                            <span>{{ meeting.created_by.first_name }} {{ meeting.created_by.last_name }}</span>
+                            {% if meeting.attachments %}
+                                <span>•</span>
+                                {% for attachment in meeting.attachments %}
+                                    <a href="{{ url_for('clients.uploaded_file', filename=attachment.file_path) }}" 
+                                       target="_blank"
+                                       class="text-indigo-600 hover:text-indigo-500">
+                                        <i class="fas fa-file"></i> {{ attachment.filename }}
+                                    </a>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% else %}
+                <li class="px-4 py-4 text-sm text-gray-500">No meetings recorded yet</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Key Links</h3>
+            <a href="{{ url_for('clients.add_link', brand_id=brand.id) }}" class="text-sm text-indigo-600 hover:text-indigo-500">
+                <i class="fas fa-plus mr-1"></i> Add Link
+            </a>
+        </div>
+        <div class="border-t border-gray-200">
+            <ul class="divide-y divide-gray-200">
+                {% for link in brand.key_links %}
+                <li class="px-4 py-4">
+                    <div>
+                        <a href="{{ link.url }}" target="_blank" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                            {{ link.url }} <i class="fas fa-external-link-alt text-xs"></i>
+                        </a>
+                        {% if link.comment %}
+                            <p class="text-sm text-gray-700 mt-1">{{ link.comment }}</p>
+                        {% endif %}
+                        <p class="text-xs text-gray-500 mt-1">
+                            Added by {{ link.created_by.first_name }} {{ link.created_by.last_name }}
+                        </p>
+                    </div>
+                </li>
+                {% else %}
+                <li class="px-4 py-4 text-sm text-gray-500">No links added yet</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="mt-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Company Commitments</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <table class="min-w-full">
+                <tbody class="divide-y divide-gray-200">
+                    {% for commitment in brand.company.commitments|sort(attribute='year', reverse=True) %}
+                    <tr>
+                        <td class="px-4 py-2 text-sm text-gray-900">{{ commitment.media_group.name }}</td>
+                        <td class="px-4 py-2 text-sm text-gray-500">{{ commitment.year }}</td>
+                        <td class="px-4 py-2 text-sm font-medium text-gray-900 text-right">{{ commitment.currency }} {{ "{:,.0f}".format(commitment.amount) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="px-4 py-4 text-sm text-gray-500">No commitments for the parent company</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Status Updates</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <ul class="divide-y divide-gray-200">
+                {% for update in brand.status_updates|sort(attribute='date', reverse=True) %}
+                <li class="px-4 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-900">{{ update.comment }}</p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                {{ update.date.strftime('%Y-%m-%d') }} by {{ update.created_by.first_name }} {{ update.created_by.last_name }}
+                            </p>
+                        </div>
+                        <div class="ml-4">
+                            {% if update.evaluation == 'perfect' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Perfect
+                                </span>
+                            {% elif update.evaluation == 'medium' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Medium
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Risk
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% else %}
+                <li class="px-4 py-4 text-sm text-gray-500">No status updates yet</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

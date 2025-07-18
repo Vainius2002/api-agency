@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">Dashboard</h3>
+</div>
+
+<div class="mt-6">
+    <dl class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">Active Companies</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ total_companies }}</dd>
+        </div>
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">Active Brands</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ total_brands }}</dd>
+        </div>
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">Active Contacts</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ total_contacts }}</dd>
+        </div>
+    </dl>
+</div>
+
+<div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Status Updates</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <ul class="divide-y divide-gray-200">
+                {% for update in recent_updates %}
+                <li class="px-4 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">{{ update.brand.name }}</p>
+                            <p class="text-sm text-gray-500">{{ update.comment }}</p>
+                            <p class="text-xs text-gray-400 mt-1">{{ update.date.strftime('%Y-%m-%d') }} by {{ update.created_by.first_name }} {{ update.created_by.last_name }}</p>
+                        </div>
+                        <div class="ml-4">
+                            {% if update.evaluation == 'perfect' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Perfect
+                                </span>
+                            {% elif update.evaluation == 'medium' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Medium
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Risk
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% else %}
+                <li class="px-4 py-4 text-sm text-gray-500">No status updates yet</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Brands at Risk</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <ul class="divide-y divide-gray-200">
+                {% for brand in risk_brands %}
+                <li class="px-4 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ brand.name }}</p>
+                            <p class="text-sm text-gray-500">{{ brand.company.name }}</p>
+                        </div>
+                        <a href="{{ url_for('clients.brand_detail', brand_id=brand.id) }}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                            View Details →
+                        </a>
+                    </div>
+                </li>
+                {% else %}
+                <li class="px-4 py-4 text-sm text-gray-500">No brands at risk</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

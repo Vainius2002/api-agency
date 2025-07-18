@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Agency CRM{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full">
+    <div class="min-h-full">
+        {% if current_user.is_authenticated %}
+        <nav class="bg-gray-800">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex h-16 items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <h1 class="text-white text-xl font-bold">Agency CRM</h1>
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="ml-10 flex items-baseline space-x-4">
+                                <a href="{{ url_for('dashboard.index') }}" 
+                                   class="{% if request.endpoint == 'dashboard.index' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Dashboard
+                                </a>
+                                <a href="{{ url_for('clients.companies') }}" 
+                                   class="{% if request.endpoint and 'companies' in request.endpoint %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Companies
+                                </a>
+                                <a href="{{ url_for('clients.brands') }}" 
+                                   class="{% if request.endpoint and 'brands' in request.endpoint %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Brands
+                                </a>
+                                <a href="{{ url_for('clients.contacts') }}" 
+                                   class="{% if request.endpoint and 'contacts' in request.endpoint %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Contacts
+                                </a>
+                                <a href="{{ url_for('team.index') }}" 
+                                   class="{% if 'team' in request.endpoint %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Team
+                                </a>
+                                <a href="{{ url_for('clients.birthdays') }}" 
+                                   class="{% if request.endpoint and 'birthdays' in request.endpoint %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Birthdays
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-4 flex items-center md:ml-6">
+                            <div class="relative ml-3">
+                                <div class="flex items-center space-x-4">
+                                    <span class="text-gray-300 text-sm">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                                    <a href="{{ url_for('auth.logout') }}" class="text-gray-300 hover:text-white text-sm">
+                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        {% endif %}
+
+        <main class="{% if current_user.is_authenticated %}py-6{% endif %}">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="mb-4 rounded-md p-4 {% if category == 'error' %}bg-red-50 text-red-800{% elif category == 'success' %}bg-green-50 text-green-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        {% if category == 'error' %}
+                                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                                        {% elif category == 'success' %}
+                                            <i class="fas fa-check-circle text-green-400"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-blue-400"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium">{{ message }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

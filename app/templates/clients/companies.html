@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Companies - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">Companies</h3>
+    <div class="mt-3 sm:mt-0 sm:ml-4">
+        <a href="{{ url_for('clients.new_company') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <i class="fas fa-plus mr-2"></i> New Company
+        </a>
+    </div>
+</div>
+
+<div class="mt-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+            {% for company in companies %}
+            <li>
+                <a href="{{ url_for('clients.company_detail', company_id=company.id) }}" class="block hover:bg-gray-50">
+                    <div class="px-4 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-indigo-600 truncate">{{ company.name }}</p>
+                                <div class="mt-2 sm:flex sm:justify-between">
+                                    <div class="sm:flex">
+                                        {% if company.vat_code %}
+                                        <p class="flex items-center text-sm text-gray-500">
+                                            <i class="fas fa-hashtag mr-1.5"></i>
+                                            VAT: {{ company.vat_code }}
+                                        </p>
+                                        {% endif %}
+                                        <p class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 {% if company.vat_code %}sm:ml-6{% endif %}">
+                                            <i class="fas fa-building mr-1.5"></i>
+                                            {{ company.brands|length }} brand{{ 's' if company.brands|length != 1 else '' }}
+                                        </p>
+                                    </div>
+                                    <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                                        {% if company.status == 'active' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                Active
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                Inactive
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ml-5 flex-shrink-0">
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </li>
+            {% else %}
+            <li class="px-4 py-4 text-sm text-gray-500">No companies found. Create your first company to get started.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

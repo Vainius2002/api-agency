@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Log Gift for {{ contact.first_name }} {{ contact.last_name }} - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">Log Gift</h3>
+    <p class="mt-1 text-sm text-gray-500">Record a gift for {{ contact.first_name }} {{ contact.last_name }}</p>
+</div>
+
+<div class="mt-6 max-w-3xl">
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        
+        <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
+            <div class="bg-gray-50 p-4 rounded-md">
+                <h4 class="text-sm font-medium text-gray-900">Contact Information</h4>
+                <div class="mt-2 text-sm text-gray-600">
+                    <p><strong>Name:</strong> {{ contact.first_name }} {{ contact.last_name }}</p>
+                    <p><strong>Birthday:</strong> 
+                        {% if contact.birthday_month and contact.birthday_day %}
+                            {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][contact.birthday_month] }} {{ contact.birthday_day }}
+                        {% else %}
+                            Not provided
+                        {% endif %}
+                    </p>
+                    <p><strong>Brands:</strong>
+                        {% for brand in contact.brands %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mr-1">
+                                {{ brand.name }}
+                            </span>
+                        {% else %}
+                            None
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                {{ form.year.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.year(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.year.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.year.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.gift_description.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.gift_description(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.gift_description.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.gift_description.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                <p class="mt-1 text-sm text-gray-500">Describe the gift that was sent</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    {{ form.gift_value.label(class="block text-sm font-medium text-gray-700") }}
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span class="text-gray-500 sm:text-sm">€</span>
+                        </div>
+                        {{ form.gift_value(class="block w-full rounded-md border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", placeholder="0.00") }}
+                    </div>
+                    {% if form.gift_value.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.gift_value.errors[0] }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    {{ form.sent_date.label(class="block text-sm font-medium text-gray-700") }}
+                    <div class="mt-1">
+                        {{ form.sent_date(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                        {% if form.sent_date.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.sent_date.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                {{ form.notes.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.notes(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", rows=3) }}
+                    {% if form.notes.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.notes.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                <p class="mt-1 text-sm text-gray-500">Any additional notes about the gift (optional)</p>
+            </div>
+        </div>
+
+        <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 space-x-3">
+            <a href="{{ url_for('clients.birthdays') }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                Cancel
+            </a>
+            {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700") }}
+        </div>
+    </form>
+</div>
+
+{% if gifts %}
+<div class="mt-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Gift History</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gift</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sent Date</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logged By</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for gift in gifts %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ gift.year }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {{ gift.gift_description }}
+                            {% if gift.notes %}
+                                <p class="text-xs text-gray-500 mt-1">{{ gift.notes }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if gift.gift_value %}€{{ "%.2f"|format(gift.gift_value) }}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if gift.sent_date %}{{ gift.sent_date.strftime('%Y-%m-%d') }}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ gift.created_by.first_name }} {{ gift.created_by.last_name }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

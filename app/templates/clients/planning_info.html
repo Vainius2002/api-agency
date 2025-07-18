@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Planning Information - {{ brand.name }} - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">Planning Information for {{ brand.name }}</h3>
+    <p class="mt-1 text-sm text-gray-500">{{ brand.company.name }}</p>
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="lg:col-span-2">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Add New Planning Information</h3>
+            </div>
+            <div class="border-t border-gray-200">
+                <form method="POST" action="" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="px-4 py-5 sm:p-6 space-y-6">
+                        <div>
+                            {{ form.comments.label(class="block text-sm font-medium text-gray-700") }}
+                            <div class="mt-1">
+                                {{ form.comments(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", rows=4) }}
+                                {% if form.comments.errors %}
+                                    <p class="mt-2 text-sm text-red-600">{{ form.comments.errors[0] }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+
+                        <div>
+                            {{ form.attachments.label(class="block text-sm font-medium text-gray-700") }}
+                            <div class="mt-1">
+                                {{ form.attachments(class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none", multiple=True) }}
+                                {% if form.attachments.errors %}
+                                    <p class="mt-2 text-sm text-red-600">{{ form.attachments.errors[0] }}</p>
+                                {% endif %}
+                                <p class="mt-1 text-sm text-gray-500">You can select multiple files</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 space-x-3">
+                        <a href="{{ url_for('clients.brand_detail', brand_id=brand.id) }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                            Cancel
+                        </a>
+                        {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-1">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Previous Planning Info</h3>
+            </div>
+            <div class="border-t border-gray-200 max-h-96 overflow-y-auto">
+                {% if planning_records %}
+                    <ul class="divide-y divide-gray-200">
+                        {% for planning in planning_records %}
+                        <li class="px-4 py-4">
+                            <p class="text-xs text-gray-500">
+                                {{ planning.created_at.strftime('%Y-%m-%d %H:%M') }} by 
+                                {{ planning.created_by.first_name }} {{ planning.created_by.last_name }}
+                            </p>
+                            {% if planning.comments %}
+                                <p class="text-sm text-gray-700 mt-1">{{ planning.comments|truncate(100) }}</p>
+                            {% endif %}
+                            {% if planning.attachments %}
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <i class="fas fa-paperclip"></i> {{ planning.attachments|length }} file(s)
+                                </p>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="px-4 py-4 text-sm text-gray-500">No previous planning information</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
