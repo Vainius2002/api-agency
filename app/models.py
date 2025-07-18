@@ -255,3 +255,93 @@ class Gift(db.Model):
     created_by = db.relationship('User', foreign_keys=[created_by_id])
     
     __table_args__ = (db.UniqueConstraint('contact_id', 'year'),)
+
+class TaskTemplate(db.Model):
+    __tablename__ = 'task_templates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    is_default = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    brand_tasks = db.relationship('BrandTask', back_populates='task_template')
+    
+    def __repr__(self):
+        return f'<TaskTemplate {self.name}>'
+
+class BrandTask(db.Model):
+    __tablename__ = 'brand_tasks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    brand_id = db.Column(db.Integer, db.ForeignKey('brands.id'), nullable=False)
+    task_template_id = db.Column(db.Integer, db.ForeignKey('task_templates.id'), nullable=False)
+    frequency = db.Column(db.String(20), nullable=False)  # monthly, quarterly, twice_yearly, yearly
+    start_date = db.Column(db.Date, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    brand = db.relationship('Brand', backref='tasks')
+    task_template = db.relationship('TaskTemplate', back_populates='brand_tasks')
+    created_by = db.relationship('User', foreign_keys=[created_by_id])
+    completions = db.relationship('TaskCompletion', back_populates='brand_task', cascade='all, delete-orphan')
+    
+    __table_args__ = (db.UniqueConstraint('brand_id', 'task_template_id'),)
+    
+    def get_next_due_date(self, from_date=None):
+        """Calculate next due date based on frequency"""
+        from dateutil.relativedelta import relativedelta
+        
+        if from_date is None:
+            from_date = datetime.now().date()
+        
+        # Get the last completion date
+        last_completion = TaskCompletion.query.filter_by(
+            brand_task_id=self.id
+        ).order_by(TaskCompletion.completion_date.desc()).first()
+        
+        if last_completion:
+            base_date = last_completion.completion_date
+        else:
+            base_date = self.start_date
+        
+        # Calculate next due date based on frequency
+        if self.frequency == 'monthly':
+            next_date = base_date + relativedelta(months=1)
+        elif self.frequency == 'quarterly':
+            next_date = base_date + relativedelta(months=3)
+        elif self.frequency == 'twice_yearly':
+            next_date = base_date + relativedelta(months=6)
+        elif self.frequency == 'yearly':
+            next_date = base_date + relativedelta(years=1)
+        else:
+            next_date = base_date
+        
+        # If next date is in the past, calculate from current date
+        while next_date < from_date:
+            if self.frequency == 'monthly':
+                next_date = next_date + relativedelta(months=1)
+            elif self.frequency == 'quarterly':
+                next_date = next_date + relativedelta(months=3)
+            elif self.frequency == 'twice_yearly':
+                next_date = next_date + relativedelta(months=6)
+            elif self.frequency == 'yearly':
+                next_date = next_date + relativedelta(years=1)
+            else:
+                break
+        
+        return next_date
+
+class TaskCompletion(db.Model):
+    __tablename__ = 'task_completions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    brand_task_id = db.Column(db.Integer, db.ForeignKey('brand_tasks.id'), nullable=False)
+    completion_date = db.Column(db.Date, nullable=False)
+    completed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    brand_task = db.relationship('BrandTask', back_populates='completions')
+    completed_by = db.relationship('User', foreign_keys=[completed_by_id])

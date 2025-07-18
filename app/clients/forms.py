@@ -155,3 +155,24 @@ class GiftForm(FlaskForm):
     sent_date = DateField('Date Sent', format='%Y-%m-%d', validators=[Optional()])
     notes = TextAreaField('Notes', validators=[Optional()])
     submit = SubmitField('Save Gift')
+
+class TaskTemplateForm(FlaskForm):
+    name = StringField('Task Name', validators=[DataRequired(), Length(max=200)])
+    description = TextAreaField('Description', validators=[Optional()])
+    submit = SubmitField('Save Task Template')
+
+class BrandTaskForm(FlaskForm):
+    task_template_id = SelectField('Task', coerce=int, validators=[DataRequired()])
+    frequency = SelectField('Frequency', choices=[
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly (every 3 months)'),
+        ('twice_yearly', 'Twice a Year (every 6 months)'),
+        ('yearly', 'Once a Year')
+    ], validators=[DataRequired()])
+    start_date = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()])
+    submit = SubmitField('Save Task')
+
+class TaskCompletionForm(FlaskForm):
+    completion_date = DateField('Completion Date', format='%Y-%m-%d', validators=[DataRequired()])
+    notes = TextAreaField('Notes', validators=[Optional()])
+    submit = SubmitField('Mark as Complete')

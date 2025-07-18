@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import render_template, redirect, url_for, flash, request, current_app, send_from_directory
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
@@ -8,10 +8,12 @@ from wtforms.validators import DataRequired
 from app.clients import bp
 from app.clients.forms import (CompanyForm, AgreementForm, BrandForm, ClientContactForm, 
                               BrandTeamForm, PlanningInfoForm, CommitmentForm, 
-                              StatusUpdateForm, MediaGroupForm, KeyMeetingForm, KeyLinkForm, GiftForm)
+                              StatusUpdateForm, MediaGroupForm, KeyMeetingForm, KeyLinkForm, GiftForm,
+                              TaskTemplateForm, BrandTaskForm, TaskCompletionForm)
 from app.models import (Company, Agreement, Brand, ClientContact, BrandTeam, 
                        PlanningInfo, Commitment, StatusUpdate, MediaGroup, User,
-                       KeyMeeting, KeyLink, PlanningAttachment, MeetingAttachment, Gift)
+                       KeyMeeting, KeyLink, PlanningAttachment, MeetingAttachment, Gift,
+                       TaskTemplate, BrandTask, TaskCompletion)
 from app import db
 
 def allowed_file(filename):
@@ -571,3 +573,181 @@ def new_status_update():
         form.date.data = datetime.now().date()
     
     return render_template('clients/status_update_form.html', form=form, title='New Status Update')
+
+@bp.route('/tasks')
+@login_required
+def tasks():
+    # Get all active brand tasks with upcoming due dates
+    today = datetime.now().date()
+    
+    # Get all active tasks
+    active_tasks = BrandTask.query.filter_by(is_active=True).join(Brand).join(TaskTemplate).all()
+    
+    # Calculate due dates and organize by brand
+    tasks_by_brand = {}
+    for task in active_tasks:
+        next_due = task.get_next_due_date()
+        
+        # Only show tasks that are due within the next 90 days
+        if next_due and (next_due - today).days <= 90:
+            if task.brand_id not in tasks_by_brand:
+                tasks_by_brand[task.brand_id] = {
+                    'brand': task.brand,
+                    'tasks': []
+                }
+            
+            # Check if already completed for this period
+            completed = TaskCompletion.query.filter(
+                TaskCompletion.brand_task_id == task.id,
+                TaskCompletion.completion_date >= next_due - timedelta(days=7)
+            ).first()
+            
+            tasks_by_brand[task.brand_id]['tasks'].append({
+                'task': task,
+                'next_due': next_due,
+                'is_overdue': next_due < today,
+                'is_completed': completed is not None,
+                'completion': completed
+            })
+    
+    # Sort tasks by due date within each brand
+    for brand_id in tasks_by_brand:
+        tasks_by_brand[brand_id]['tasks'].sort(key=lambda x: x['next_due'])
+    
+    return render_template('clients/tasks.html', tasks_by_brand=tasks_by_brand)
+
+@bp.route('/brand/<int:brand_id>/tasks')
+@login_required
+def brand_tasks(brand_id):
+    brand = Brand.query.get_or_404(brand_id)
+    
+    # Get all task templates
+    templates = TaskTemplate.query.order_by(TaskTemplate.name).all()
+    
+    # Get brand's current tasks
+    brand_tasks = BrandTask.query.filter_by(brand_id=brand_id).all()
+    assigned_template_ids = [bt.task_template_id for bt in brand_tasks]
+    
+    # Get available templates (not yet assigned)
+    available_templates = [t for t in templates if t.id not in assigned_template_ids]
+    
+    # Calculate next due dates for active tasks
+    tasks_with_due_dates = []
+    for bt in brand_tasks:
+        if bt.is_active:
+            next_due = bt.get_next_due_date()
+            last_completion = TaskCompletion.query.filter_by(
+                brand_task_id=bt.id
+            ).order_by(TaskCompletion.completion_date.desc()).first()
+            
+            tasks_with_due_dates.append({
+                'task': bt,
+                'next_due': next_due,
+                'last_completion': last_completion,
+                'is_overdue': next_due < datetime.now().date() if next_due else False
+            })
+    
+    # Sort by next due date
+    tasks_with_due_dates.sort(key=lambda x: x['next_due'] if x['next_due'] else datetime.max.date())
+    
+    return render_template('clients/brand_tasks.html', 
+                         brand=brand, 
+                         tasks=tasks_with_due_dates,
+                         available_templates=available_templates)
+
+@bp.route('/brand/<int:brand_id>/task/new', methods=['GET', 'POST'])
+@login_required
+def new_brand_task(brand_id):
+    brand = Brand.query.get_or_404(brand_id)
+    form = BrandTaskForm()
+    
+    # Get available task templates
+    existing_tasks = BrandTask.query.filter_by(brand_id=brand_id).all()
+    assigned_template_ids = [bt.task_template_id for bt in existing_tasks]
+    
+    available_templates = TaskTemplate.query.filter(
+        ~TaskTemplate.id.in_(assigned_template_ids)
+    ).order_by(TaskTemplate.name).all()
+    
+    form.task_template_id.choices = [(t.id, t.name) for t in available_templates]
+    
+    if form.validate_on_submit():
+        task = BrandTask(
+            brand_id=brand_id,
+            task_template_id=form.task_template_id.data,
+            frequency=form.frequency.data,
+            start_date=form.start_date.data,
+            created_by_id=current_user.id
+        )
+        db.session.add(task)
+        db.session.commit()
+        flash('Task added successfully!', 'success')
+        return redirect(url_for('clients.brand_tasks', brand_id=brand_id))
+    
+    # Set default start date to today
+    if request.method == 'GET':
+        form.start_date.data = datetime.now().date()
+    
+    return render_template('clients/brand_task_form.html', form=form, brand=brand)
+
+@bp.route('/brand-task/<int:task_id>/complete', methods=['GET', 'POST'])
+@login_required
+def complete_task(task_id):
+    task = BrandTask.query.get_or_404(task_id)
+    form = TaskCompletionForm()
+    
+    if form.validate_on_submit():
+        completion = TaskCompletion(
+            brand_task_id=task_id,
+            completion_date=form.completion_date.data,
+            notes=form.notes.data,
+            completed_by_id=current_user.id
+        )
+        db.session.add(completion)
+        db.session.commit()
+        flash('Task marked as complete!', 'success')
+        return redirect(url_for('clients.brand_tasks', brand_id=task.brand_id))
+    
+    # Set default date to today
+    if request.method == 'GET':
+        form.completion_date.data = datetime.now().date()
+    
+    return render_template('clients/task_completion_form.html', form=form, task=task)
+
+@bp.route('/brand-task/<int:task_id>/toggle-active', methods=['POST'])
+@login_required
+def toggle_task_active(task_id):
+    task = BrandTask.query.get_or_404(task_id)
+    task.is_active = not task.is_active
+    db.session.commit()
+    
+    status = 'activated' if task.is_active else 'deactivated'
+    flash(f'Task {status} successfully!', 'success')
+    return redirect(url_for('clients.brand_tasks', brand_id=task.brand_id))
+
+@bp.route('/task-templates')
+@login_required
+def task_templates():
+    templates = TaskTemplate.query.order_by(TaskTemplate.name).all()
+    return render_template('clients/task_templates.html', templates=templates)
+
+@bp.route('/task-template/new', methods=['GET', 'POST'])
+@login_required
+def new_task_template():
+    form = TaskTemplateForm()
+    
+    if form.validate_on_submit():
+        template = TaskTemplate(
+            name=form.name.data,
+            description=form.description.data
+        )
+        db.session.add(template)
+        try:
+            db.session.commit()
+            flash('Task template created successfully!', 'success')
+            return redirect(url_for('clients.task_templates'))
+        except:
+            db.session.rollback()
+            flash('A task template with this name already exists!', 'error')
+    
+    return render_template('clients/task_template_form.html', form=form, title='New Task Template')

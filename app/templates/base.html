@@ -47,6 +47,10 @@
                                    class="{% if request.endpoint and 'status_update' in request.endpoint %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
                                     Status Updates
                                 </a>
+                                <a href="{{ url_for('clients.tasks') }}" 
+                                   class="{% if request.endpoint and 'task' in request.endpoint %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Tasks
+                                </a>
                             </div>
                         </div>
                     </div>
