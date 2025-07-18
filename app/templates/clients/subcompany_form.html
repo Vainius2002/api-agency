@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title }} - Agency CRM{% endblock %}
+{% block title %}{% if subcompany %}Edit Subcompany{% else %}New Subcompany{% endif %} - Agency CRM{% endblock %}
 
 {% block content %}
 <div class="pb-5 border-b border-gray-200">
-    <h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ title }}</h3>
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">
+        {% if subcompany %}Edit Subcompany{% else %}New Subcompany{% endif %}
+    </h3>
+    <p class="mt-1 text-sm text-gray-500">Parent Company: {{ parent_company.name }}</p>
 </div>
 
 <div class="mt-6 max-w-3xl">
@@ -61,45 +64,13 @@
                     {% endif %}
                 </div>
             </div>
-
-            <div>
-                {{ form.agency_fees.label(class="block text-sm font-medium text-gray-700") }}
-                <div class="mt-1">
-                    {{ form.agency_fees(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", rows=5, placeholder="ATL planning 10%\nDigital 5%\nCreative 15%") }}
-                    {% if form.agency_fees.errors %}
-                        <p class="mt-2 text-sm text-red-600">{{ form.agency_fees.errors[0] }}</p>
-                    {% endif %}
-                    <p class="mt-1 text-sm text-gray-500">Enter each fee on a new line</p>
-                </div>
-            </div>
-
-            <div>
-                {{ form.parent_company_id.label(class="block text-sm font-medium text-gray-700") }}
-                <div class="mt-1">
-                    {{ form.parent_company_id(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
-                    {% if form.parent_company_id.errors %}
-                        <p class="mt-2 text-sm text-red-600">{{ form.parent_company_id.errors[0] }}</p>
-                    {% endif %}
-                    <p class="mt-1 text-sm text-gray-500">Select if this is a subcompany of another company</p>
-                </div>
-            </div>
-
-            <div>
-                {{ form.status.label(class="block text-sm font-medium text-gray-700") }}
-                <div class="mt-1">
-                    {{ form.status(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
-                    {% if form.status.errors %}
-                        <p class="mt-2 text-sm text-red-600">{{ form.status.errors[0] }}</p>
-                    {% endif %}
-                </div>
-            </div>
         </div>
 
         <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 space-x-3">
-            <a href="{{ url_for('clients.companies') }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            <a href="{{ url_for('clients.company_detail', company_id=parent_company.id) }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                 Cancel
             </a>
-            {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2") }}
+            {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700") }}
         </div>
     </form>
 </div>

@@ -285,4 +285,46 @@
         </div>
     </div>
 </div>
+
+<div class="mt-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Invoices</h3>
+            <a href="{{ url_for('clients.new_invoice', brand_id=brand.id) }}" class="text-sm text-indigo-600 hover:text-indigo-500">
+                <i class="fas fa-plus"></i> Add Invoice
+            </a>
+        </div>
+        <div class="border-t border-gray-200">
+            <ul class="divide-y divide-gray-200">
+                {% for invoice in brand.invoices|sort(attribute='invoice_date', reverse=True) %}
+                <li class="px-4 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">
+                                {{ invoice.invoice_date.strftime('%Y-%m-%d') }} - {{ invoice.company.name }}
+                                {% if invoice.company.id != brand.company_id %}
+                                    <span class="text-xs text-gray-500">(subcompany)</span>
+                                {% endif %}
+                            </p>
+                            {% if invoice.short_info %}
+                                <p class="text-sm text-gray-500">{{ invoice.short_info }}</p>
+                            {% endif %}
+                            <p class="text-sm font-medium text-gray-900 mt-1">EUR {{ "{:,.2f}".format(invoice.total_amount) }}</p>
+                        </div>
+                        <div class="ml-4">
+                            {% if invoice.file_path %}
+                                <a href="{{ url_for('clients.download_invoice', invoice_id=invoice.id) }}" class="text-indigo-600 hover:text-indigo-900 text-sm">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% else %}
+                <li class="px-4 py-4 text-sm text-gray-500">No invoices yet</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
 {% endblock %}

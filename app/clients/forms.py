@@ -12,9 +12,11 @@ class MultiCheckboxField(SelectMultipleField):
 class CompanyForm(FlaskForm):
     name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])
     vat_code = StringField('VAT Code', validators=[Optional(), Length(max=50)])
+    registration_number = StringField('Registration Number', validators=[Optional(), Length(max=100)])
     address = TextAreaField('Address', validators=[Optional()])
     bank_account = StringField('Bank Account', validators=[Optional(), Length(max=100)])
     agency_fees = TextAreaField('Agency Fees', validators=[Optional()])
+    parent_company_id = SelectField('Parent Company', coerce=int, validators=[Optional()])
     status = SelectField('Status', choices=[('active', 'Active'), ('inactive', 'Inactive')], 
                         validators=[DataRequired()])
     submit = SubmitField('Save Company')
@@ -176,3 +178,21 @@ class TaskCompletionForm(FlaskForm):
     completion_date = DateField('Completion Date', format='%Y-%m-%d', validators=[DataRequired()])
     notes = TextAreaField('Notes', validators=[Optional()])
     submit = SubmitField('Mark as Complete')
+
+class SubcompanyForm(FlaskForm):
+    name = StringField('Company Name', validators=[DataRequired(), Length(max=200)])
+    vat_code = StringField('VAT Code', validators=[Optional(), Length(max=50)])
+    registration_number = StringField('Registration Number', validators=[Optional(), Length(max=100)])
+    address = TextAreaField('Address', validators=[Optional()])
+    bank_account = StringField('Bank Account', validators=[Optional(), Length(max=100)])
+    submit = SubmitField('Save Subcompany')
+
+class InvoiceForm(FlaskForm):
+    company_id = SelectField('Invoice To', coerce=int, validators=[DataRequired()])
+    invoice_date = DateField('Invoice Date', format='%Y-%m-%d', validators=[DataRequired()])
+    short_info = TextAreaField('Description', validators=[Optional()])
+    total_amount = DecimalField('Total Amount (EUR)', places=2, validators=[DataRequired()])
+    file = FileField('Invoice File (PDF/Excel)', validators=[
+        FileAllowed(['pdf', 'xlsx', 'xls'], 'Only PDF and Excel files are allowed!')
+    ])
+    submit = SubmitField('Save Invoice')

@@ -40,16 +40,20 @@ class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     vat_code = db.Column(db.String(50), unique=True)
+    registration_number = db.Column(db.String(100))
     address = db.Column(db.Text)
     bank_account = db.Column(db.String(100))
     agency_fees = db.Column(db.Text)
     status = db.Column(db.String(20), default='active')
+    parent_company_id = db.Column(db.Integer, db.ForeignKey('companies.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     brands = db.relationship('Brand', back_populates='company', cascade='all, delete-orphan')
     agreements = db.relationship('Agreement', back_populates='company', cascade='all, delete-orphan')
     commitments = db.relationship('Commitment', back_populates='company', cascade='all, delete-orphan')
+    parent_company = db.relationship('Company', remote_side=[id], backref='subcompanies')
+    invoices = db.relationship('Invoice', back_populates='company', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Company {self.name}>'
@@ -74,6 +78,8 @@ class Brand(db.Model):
                                  cascade='all, delete-orphan', order_by='KeyMeeting.date.desc()')
     key_links = db.relationship('KeyLink', back_populates='brand', 
                               cascade='all, delete-orphan', order_by='KeyLink.created_at.desc()')
+    invoices = db.relationship('Invoice', back_populates='brand', cascade='all, delete-orphan')
+    brand_tasks = db.relationship('BrandTask', back_populates='brand', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Brand {self.name}>'
@@ -282,7 +288,7 @@ class BrandTask(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
-    brand = db.relationship('Brand', backref='tasks')
+    brand = db.relationship('Brand', back_populates='brand_tasks')
     task_template = db.relationship('TaskTemplate', back_populates='brand_tasks')
     created_by = db.relationship('User', foreign_keys=[created_by_id])
     completions = db.relationship('TaskCompletion', back_populates='brand_task', cascade='all, delete-orphan')
@@ -345,3 +351,21 @@ class TaskCompletion(db.Model):
     
     brand_task = db.relationship('BrandTask', back_populates='completions')
     completed_by = db.relationship('User', foreign_keys=[completed_by_id])
+
+class Invoice(db.Model):
+    __tablename__ = 'invoices'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    brand_id = db.Column(db.Integer, db.ForeignKey('brands.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
+    invoice_date = db.Column(db.Date, nullable=False)
+    short_info = db.Column(db.Text)
+    filename = db.Column(db.String(255))
+    file_path = db.Column(db.String(500))
+    total_amount = db.Column(db.Numeric(12, 2), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    brand = db.relationship('Brand', back_populates='invoices')
+    company = db.relationship('Company', back_populates='invoices')
+    created_by = db.relationship('User', foreign_keys=[created_by_id])

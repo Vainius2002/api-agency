@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from flask import render_template, redirect, url_for, flash, request, current_app, send_from_directory
+from flask import render_template, redirect, url_for, flash, request, current_app, send_from_directory, abort
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from wtforms import SelectField
@@ -9,11 +9,11 @@ from app.clients import bp
 from app.clients.forms import (CompanyForm, AgreementForm, BrandForm, ClientContactForm, 
                               BrandTeamForm, PlanningInfoForm, CommitmentForm, 
                               StatusUpdateForm, MediaGroupForm, KeyMeetingForm, KeyLinkForm, GiftForm,
-                              TaskTemplateForm, BrandTaskForm, TaskCompletionForm)
+                              TaskTemplateForm, BrandTaskForm, TaskCompletionForm, SubcompanyForm, InvoiceForm)
 from app.models import (Company, Agreement, Brand, ClientContact, BrandTeam, 
                        PlanningInfo, Commitment, StatusUpdate, MediaGroup, User,
                        KeyMeeting, KeyLink, PlanningAttachment, MeetingAttachment, Gift,
-                       TaskTemplate, BrandTask, TaskCompletion)
+                       TaskTemplate, BrandTask, TaskCompletion, Invoice)
 from app import db
 
 def allowed_file(filename):
@@ -30,13 +30,18 @@ def companies():
 @login_required
 def new_company():
     form = CompanyForm()
+    # Get list of companies for parent company selection
+    form.parent_company_id.choices = [(0, 'None')] + [(c.id, c.name) for c in Company.query.order_by(Company.name).all()]
+    
     if form.validate_on_submit():
         company = Company(
             name=form.name.data,
             vat_code=form.vat_code.data,
+            registration_number=form.registration_number.data,
             address=form.address.data,
             bank_account=form.bank_account.data,
             agency_fees=form.agency_fees.data,
+            parent_company_id=form.parent_company_id.data if form.parent_company_id.data != 0 else None,
             status=form.status.data
         )
         db.session.add(company)
@@ -57,12 +62,20 @@ def edit_company(company_id):
     company = Company.query.get_or_404(company_id)
     form = CompanyForm(company=company)
     
+    # Get list of companies for parent company selection, excluding current company and its subcompanies
+    exclude_ids = [company.id] + [s.id for s in company.subcompanies]
+    parent_choices = [(0, 'None')]
+    parent_choices += [(c.id, c.name) for c in Company.query.filter(~Company.id.in_(exclude_ids)).order_by(Company.name).all()]
+    form.parent_company_id.choices = parent_choices
+    
     if form.validate_on_submit():
         company.name = form.name.data
         company.vat_code = form.vat_code.data
+        company.registration_number = form.registration_number.data
         company.address = form.address.data
         company.bank_account = form.bank_account.data
         company.agency_fees = form.agency_fees.data
+        company.parent_company_id = form.parent_company_id.data if form.parent_company_id.data != 0 else None
         company.status = form.status.data
         company.updated_at = datetime.utcnow()
         db.session.commit()
@@ -72,9 +85,11 @@ def edit_company(company_id):
     elif request.method == 'GET':
         form.name.data = company.name
         form.vat_code.data = company.vat_code
+        form.registration_number.data = company.registration_number
         form.address.data = company.address
         form.bank_account.data = company.bank_account
         form.agency_fees.data = company.agency_fees
+        form.parent_company_id.data = company.parent_company_id or 0
         form.status.data = company.status
     
     return render_template('clients/company_form.html', form=form, title='Edit Company', company=company)
@@ -751,3 +766,109 @@ def new_task_template():
             flash('A task template with this name already exists!', 'error')
     
     return render_template('clients/task_template_form.html', form=form, title='New Task Template')
+
+@bp.route('/company/<int:company_id>/subcompany/new', methods=['GET', 'POST'])
+@login_required
+def new_subcompany(company_id):
+    parent_company = Company.query.get_or_404(company_id)
+    form = SubcompanyForm()
+    
+    if form.validate_on_submit():
+        subcompany = Company(
+            name=form.name.data,
+            vat_code=form.vat_code.data,
+            registration_number=form.registration_number.data,
+            address=form.address.data,
+            bank_account=form.bank_account.data,
+            parent_company_id=company_id,
+            status='active'
+        )
+        db.session.add(subcompany)
+        db.session.commit()
+        flash('Subcompany created successfully!', 'success')
+        return redirect(url_for('clients.company_detail', company_id=company_id))
+    
+    return render_template('clients/subcompany_form.html', form=form, parent_company=parent_company)
+
+@bp.route('/company/<int:company_id>/subcompany/<int:subcompany_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_subcompany(company_id, subcompany_id):
+    parent_company = Company.query.get_or_404(company_id)
+    subcompany = Company.query.get_or_404(subcompany_id)
+    
+    if subcompany.parent_company_id != company_id:
+        abort(404)
+    
+    form = SubcompanyForm()
+    
+    if form.validate_on_submit():
+        subcompany.name = form.name.data
+        subcompany.vat_code = form.vat_code.data
+        subcompany.registration_number = form.registration_number.data
+        subcompany.address = form.address.data
+        subcompany.bank_account = form.bank_account.data
+        subcompany.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash('Subcompany updated successfully!', 'success')
+        return redirect(url_for('clients.company_detail', company_id=company_id))
+    
+    elif request.method == 'GET':
+        form.name.data = subcompany.name
+        form.vat_code.data = subcompany.vat_code
+        form.registration_number.data = subcompany.registration_number
+        form.address.data = subcompany.address
+        form.bank_account.data = subcompany.bank_account
+    
+    return render_template('clients/subcompany_form.html', form=form, parent_company=parent_company, subcompany=subcompany)
+
+@bp.route('/invoices')
+@login_required
+def invoices():
+    invoices = Invoice.query.join(Brand).join(Company).order_by(Invoice.invoice_date.desc()).all()
+    return render_template('clients/invoices.html', invoices=invoices)
+
+@bp.route('/brand/<int:brand_id>/invoice/new', methods=['GET', 'POST'])
+@login_required
+def new_invoice(brand_id):
+    brand = Brand.query.get_or_404(brand_id)
+    form = InvoiceForm()
+    
+    # Get all companies (main company + subcompanies)
+    companies = [brand.company]
+    if brand.company.subcompanies:
+        companies.extend(brand.company.subcompanies)
+    form.company_id.choices = [(c.id, c.name) for c in companies]
+    
+    if form.validate_on_submit():
+        invoice = Invoice(
+            brand_id=brand_id,
+            company_id=form.company_id.data,
+            invoice_date=form.invoice_date.data,
+            short_info=form.short_info.data,
+            total_amount=form.total_amount.data,
+            created_by_id=current_user.id
+        )
+        
+        if form.file.data:
+            filename = secure_filename(form.file.data.filename)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"invoice_{brand_id}_{timestamp}_{filename}"
+            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            form.file.data.save(file_path)
+            invoice.filename = form.file.data.filename
+            invoice.file_path = filename
+        
+        db.session.add(invoice)
+        db.session.commit()
+        flash('Invoice registered successfully!', 'success')
+        return redirect(url_for('clients.brand_detail', brand_id=brand_id))
+    
+    return render_template('clients/invoice_form.html', form=form, brand=brand)
+
+@bp.route('/invoice/<int:invoice_id>/download')
+@login_required
+def download_invoice(invoice_id):
+    invoice = Invoice.query.get_or_404(invoice_id)
+    if invoice.file_path:
+        return send_from_directory(current_app.config['UPLOAD_FOLDER'], invoice.file_path, 
+                                 as_attachment=True, download_name=invoice.filename)
