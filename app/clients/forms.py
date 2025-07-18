@@ -14,6 +14,7 @@ class CompanyForm(FlaskForm):
     vat_code = StringField('VAT Code', validators=[Optional(), Length(max=50)])
     address = TextAreaField('Address', validators=[Optional()])
     bank_account = StringField('Bank Account', validators=[Optional(), Length(max=100)])
+    agency_fees = TextAreaField('Agency Fees', validators=[Optional()])
     status = SelectField('Status', choices=[('active', 'Active'), ('inactive', 'Inactive')], 
                         validators=[DataRequired()])
     submit = SubmitField('Save Company')
@@ -36,6 +37,7 @@ class AgreementForm(FlaskForm):
         ('data', 'Data Agreement'),
         ('other', 'Other')
     ], validators=[DataRequired()])
+    valid_until = DateField('Valid Until', format='%Y-%m-%d', validators=[Optional()])
     file = FileField('Agreement File (PDF)', validators=[
         FileAllowed(['pdf'], 'Only PDF files are allowed!')
     ])

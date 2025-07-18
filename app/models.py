@@ -42,6 +42,7 @@ class Company(db.Model):
     vat_code = db.Column(db.String(50), unique=True)
     address = db.Column(db.Text)
     bank_account = db.Column(db.String(100))
+    agency_fees = db.Column(db.Text)
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -128,6 +129,7 @@ class Agreement(db.Model):
     type = db.Column(db.String(50), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.String(500), nullable=False)
+    valid_until = db.Column(db.Date)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     uploaded_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     

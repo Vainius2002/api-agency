@@ -91,6 +91,19 @@
     </div>
 </div>
 
+{% if company.agency_fees %}
+<div class="mt-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Agency Fees</h3>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+            <div class="text-sm text-gray-900 whitespace-pre-line">{{ company.agency_fees }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
         <div class="px-4 py-5 sm:px-6">
@@ -102,10 +115,24 @@
                 <li class="px-4 py-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-gray-900">{{ agreement.type.title() }} Agreement</p>
-                            <p class="text-sm text-gray-500">{{ agreement.uploaded_at.strftime('%Y-%m-%d') }}</p>
+                            <p class="text-sm font-medium text-gray-900">
+                                <a href="{{ url_for('clients.uploaded_file', filename=agreement.file_path) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900">
+                                    {{ agreement.type.title() }} Agreement
+                                </a>
+                            </p>
+                            <p class="text-sm text-gray-500">
+                                Uploaded: {{ agreement.uploaded_at.strftime('%Y-%m-%d') }}
+                                {% if agreement.valid_until %}
+                                    | Valid until: {{ agreement.valid_until.strftime('%Y-%m-%d') }}
+                                    {% if agreement.valid_until < datetime.now().date() %}
+                                        <span class="ml-1 text-red-600">(Expired)</span>
+                                    {% endif %}
+                                {% endif %}
+                            </p>
                         </div>
-                        <i class="fas fa-file-pdf text-red-500"></i>
+                        <a href="{{ url_for('clients.uploaded_file', filename=agreement.file_path) }}" target="_blank" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
                     </div>
                 </li>
                 {% else %}

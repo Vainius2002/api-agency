@@ -3,6 +3,8 @@ from datetime import datetime
 from flask import render_template, redirect, url_for, flash, request, current_app, send_from_directory
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
+from wtforms import SelectField
+from wtforms.validators import DataRequired
 from app.clients import bp
 from app.clients.forms import (CompanyForm, AgreementForm, BrandForm, ClientContactForm, 
                               BrandTeamForm, PlanningInfoForm, CommitmentForm, 
@@ -32,6 +34,7 @@ def new_company():
             vat_code=form.vat_code.data,
             address=form.address.data,
             bank_account=form.bank_account.data,
+            agency_fees=form.agency_fees.data,
             status=form.status.data
         )
         db.session.add(company)
@@ -44,7 +47,7 @@ def new_company():
 @login_required
 def company_detail(company_id):
     company = Company.query.get_or_404(company_id)
-    return render_template('clients/company_detail.html', company=company)
+    return render_template('clients/company_detail.html', company=company, datetime=datetime)
 
 @bp.route('/company/<int:company_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -57,6 +60,7 @@ def edit_company(company_id):
         company.vat_code = form.vat_code.data
         company.address = form.address.data
         company.bank_account = form.bank_account.data
+        company.agency_fees = form.agency_fees.data
         company.status = form.status.data
         company.updated_at = datetime.utcnow()
         db.session.commit()
@@ -68,6 +72,7 @@ def edit_company(company_id):
         form.vat_code.data = company.vat_code
         form.address.data = company.address
         form.bank_account.data = company.bank_account
+        form.agency_fees.data = company.agency_fees
         form.status.data = company.status
     
     return render_template('clients/company_form.html', form=form, title='Edit Company', company=company)
@@ -91,6 +96,7 @@ def upload_agreement(company_id):
                 type=form.type.data,
                 filename=form.file.data.filename,
                 file_path=filename,
+                valid_until=form.valid_until.data,
                 uploaded_by_id=current_user.id
             )
             db.session.add(agreement)
@@ -506,3 +512,62 @@ def add_gift(contact_id):
     gifts = Gift.query.filter_by(contact_id=contact_id).order_by(Gift.year.desc()).all()
     
     return render_template('clients/gift_form.html', form=form, contact=contact, gifts=gifts)
+
+@bp.route('/status-updates')
+@login_required
+def status_updates():
+    # Get filter parameters
+    brand_id = request.args.get('brand_id', type=int)
+    evaluation = request.args.get('evaluation')
+    
+    # Build query
+    query = StatusUpdate.query.join(Brand).join(Company)
+    
+    if brand_id:
+        query = query.filter(StatusUpdate.brand_id == brand_id)
+    if evaluation:
+        query = query.filter(StatusUpdate.evaluation == evaluation)
+    
+    # Get all status updates ordered by date
+    updates = query.order_by(StatusUpdate.date.desc()).all()
+    
+    # Get all brands for filter dropdown
+    brands = Brand.query.join(Company).order_by(Company.name, Brand.name).all()
+    
+    return render_template('clients/status_updates.html', 
+                         updates=updates, 
+                         brands=brands,
+                         selected_brand_id=brand_id,
+                         selected_evaluation=evaluation)
+
+@bp.route('/status-update/new', methods=['GET', 'POST'])
+@login_required
+def new_status_update():
+    # Create a custom form class with brand_id field
+    class StatusUpdateFormWithBrand(StatusUpdateForm):
+        brand_id = SelectField('Brand', coerce=int, validators=[DataRequired()])
+    
+    form = StatusUpdateFormWithBrand()
+    
+    # Add brand choices to form
+    brands = Brand.query.join(Company).order_by(Company.name, Brand.name).all()
+    form.brand_id.choices = [(b.id, f"{b.name} ({b.company.name})") for b in brands]
+    
+    if form.validate_on_submit():
+        update = StatusUpdate(
+            brand_id=form.brand_id.data,
+            date=form.date.data,
+            comment=form.comment.data,
+            evaluation=form.evaluation.data,
+            created_by_id=current_user.id
+        )
+        db.session.add(update)
+        db.session.commit()
+        flash('Status update added successfully!', 'success')
+        return redirect(url_for('clients.status_updates'))
+    
+    # Set default date to today
+    if request.method == 'GET':
+        form.date.data = datetime.now().date()
+    
+    return render_template('clients/status_update_form.html', form=form, title='New Status Update')
