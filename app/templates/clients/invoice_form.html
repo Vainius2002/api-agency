@@ -56,13 +56,13 @@
             </div>
 
             <div>
-                {{ form.file.label(class="block text-sm font-medium text-gray-700") }}
+                {{ form.files.label(class="block text-sm font-medium text-gray-700") }}
                 <div class="mt-1">
-                    {{ form.file(class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none") }}
-                    {% if form.file.errors %}
-                        <p class="mt-2 text-sm text-red-600">{{ form.file.errors[0] }}</p>
+                    {{ form.files(class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none", multiple=True) }}
+                    {% if form.files.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.files.errors[0] }}</p>
                     {% endif %}
-                    <p class="mt-1 text-sm text-gray-500">Upload the invoice file (PDF or Excel)</p>
+                    <p class="mt-1 text-sm text-gray-500">Upload invoice files (PDF or Excel). You can select multiple files. The total amount entered above applies to all files combined.</p>
                 </div>
             </div>
         </div>

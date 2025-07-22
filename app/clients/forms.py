@@ -192,7 +192,7 @@ class InvoiceForm(FlaskForm):
     invoice_date = DateField('Invoice Date', format='%Y-%m-%d', validators=[DataRequired()])
     short_info = TextAreaField('Description', validators=[Optional()])
     total_amount = DecimalField('Total Amount (EUR)', places=2, validators=[DataRequired()])
-    file = FileField('Invoice File (PDF/Excel)', validators=[
+    files = MultipleFileField('Invoice Files (PDF/Excel)', validators=[
         FileAllowed(['pdf', 'xlsx', 'xls'], 'Only PDF and Excel files are allowed!')
     ])
     submit = SubmitField('Save Invoice')

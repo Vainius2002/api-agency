@@ -13,7 +13,7 @@ from app.clients.forms import (CompanyForm, AgreementForm, BrandForm, ClientCont
 from app.models import (Company, Agreement, Brand, ClientContact, BrandTeam, 
                        PlanningInfo, Commitment, StatusUpdate, MediaGroup, User,
                        KeyMeeting, KeyLink, PlanningAttachment, MeetingAttachment, Gift,
-                       TaskTemplate, BrandTask, TaskCompletion, Invoice)
+                       TaskTemplate, BrandTask, TaskCompletion, Invoice, InvoiceAttachment)
 from app import db
 
 def allowed_file(filename):
@@ -23,7 +23,8 @@ def allowed_file(filename):
 @bp.route('/companies')
 @login_required
 def companies():
-    companies = Company.query.order_by(Company.name).all()
+    # Only get parent companies (those without parent_company_id)
+    companies = Company.query.filter_by(parent_company_id=None).order_by(Company.name).all()
     return render_template('clients/companies.html', companies=companies)
 
 @bp.route('/company/new', methods=['GET', 'POST'])
@@ -93,6 +94,32 @@ def edit_company(company_id):
         form.status.data = company.status
     
     return render_template('clients/company_form.html', form=form, title='Edit Company', company=company)
+
+@bp.route('/company/<int:company_id>/delete', methods=['POST'])
+@login_required
+def delete_company(company_id):
+    company = Company.query.get_or_404(company_id)
+    
+    # Check if company has subcompanies
+    if company.subcompanies:
+        flash('Cannot delete company with existing subcompanies. Please delete subcompanies first.', 'error')
+        return redirect(url_for('clients.company_detail', company_id=company.id))
+    
+    # Check if company is a subcompany of another company
+    if company.parent_company_id:
+        flash('Cannot delete a subcompany from this page. Use the companies list instead.', 'error')
+        return redirect(url_for('clients.company_detail', company_id=company.id))
+    
+    try:
+        # Delete the company - related entities will cascade delete
+        db.session.delete(company)
+        db.session.commit()
+        flash(f'Company "{company.name}" and all related data have been deleted successfully!', 'success')
+        return redirect(url_for('clients.companies'))
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the company. Please try again.', 'error')
+        return redirect(url_for('clients.company_detail', company_id=company.id))
 
 @bp.route('/company/<int:company_id>/agreement', methods=['GET', 'POST'])
 @login_required
@@ -247,8 +274,47 @@ def add_status_update(brand_id):
 @bp.route('/contacts')
 @login_required
 def contacts():
-    contacts = ClientContact.query.order_by(ClientContact.last_name, ClientContact.first_name).all()
-    return render_template('clients/contacts.html', contacts=contacts)
+    # Get filter parameters
+    brand_id = request.args.get('brand_id', type=int)
+    company_id = request.args.get('company_id', type=int)
+    search = request.args.get('search', '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    # Build query
+    query = ClientContact.query
+    
+    # Apply filters
+    if brand_id:
+        query = query.join(ClientContact.brands).filter(Brand.id == brand_id)
+    if company_id:
+        query = query.join(ClientContact.brands).filter(Brand.company_id == company_id)
+    if search:
+        search_filter = f'%{search}%'
+        query = query.filter(db.or_(
+            ClientContact.first_name.ilike(search_filter),
+            ClientContact.last_name.ilike(search_filter),
+            ClientContact.email.ilike(search_filter),
+            ClientContact.phone.ilike(search_filter)
+        ))
+    
+    # Get paginated contacts
+    pagination = query.order_by(ClientContact.last_name, ClientContact.first_name).paginate(
+        page=page, per_page=per_page, error_out=False)
+    contacts = pagination.items
+    
+    # Get all brands and companies for filter dropdowns
+    brands = Brand.query.join(Company).order_by(Company.name, Brand.name).all()
+    companies = Company.query.order_by(Company.name).all()
+    
+    return render_template('clients/contacts.html', 
+                         contacts=contacts,
+                         brands=brands,
+                         companies=companies,
+                         pagination=pagination,
+                         selected_brand_id=brand_id,
+                         selected_company_id=company_id,
+                         search_query=search)
 
 @bp.route('/contact/new', methods=['GET', 'POST'])
 @bp.route('/brand/<int:brand_id>/contact/new', methods=['GET', 'POST'])
@@ -536,6 +602,9 @@ def status_updates():
     # Get filter parameters
     brand_id = request.args.get('brand_id', type=int)
     evaluation = request.args.get('evaluation')
+    created_by_id = request.args.get('created_by_id', type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
     
     # Build query
     query = StatusUpdate.query.join(Brand).join(Company)
@@ -544,18 +613,28 @@ def status_updates():
         query = query.filter(StatusUpdate.brand_id == brand_id)
     if evaluation:
         query = query.filter(StatusUpdate.evaluation == evaluation)
+    if created_by_id:
+        query = query.filter(StatusUpdate.created_by_id == created_by_id)
     
-    # Get all status updates ordered by date
-    updates = query.order_by(StatusUpdate.date.desc()).all()
+    # Get paginated status updates ordered by date
+    pagination = query.order_by(StatusUpdate.date.desc()).paginate(
+        page=page, per_page=per_page, error_out=False)
+    updates = pagination.items
     
     # Get all brands for filter dropdown
     brands = Brand.query.join(Company).order_by(Company.name, Brand.name).all()
     
+    # Get all users who have created status updates for filter dropdown
+    creators = db.session.query(User).join(StatusUpdate, User.id == StatusUpdate.created_by_id).distinct().order_by(User.first_name, User.last_name).all()
+    
     return render_template('clients/status_updates.html', 
                          updates=updates, 
                          brands=brands,
+                         creators=creators,
+                         pagination=pagination,
                          selected_brand_id=brand_id,
-                         selected_evaluation=evaluation)
+                         selected_evaluation=evaluation,
+                         selected_created_by_id=created_by_id)
 
 @bp.route('/status-update/new', methods=['GET', 'POST'])
 @login_required
@@ -821,11 +900,79 @@ def edit_subcompany(company_id, subcompany_id):
     
     return render_template('clients/subcompany_form.html', form=form, parent_company=parent_company, subcompany=subcompany)
 
+@bp.route('/subcompany/<int:subcompany_id>/delete', methods=['POST'])
+@login_required
+def delete_subcompany(subcompany_id):
+    subcompany = Company.query.get_or_404(subcompany_id)
+    
+    # Verify this is actually a subcompany
+    if not subcompany.parent_company_id:
+        flash('This is not a subcompany.', 'error')
+        return redirect(url_for('clients.companies'))
+    
+    parent_company_id = subcompany.parent_company_id
+    
+    # Check if subcompany has its own subcompanies
+    if subcompany.subcompanies:
+        flash('Cannot delete subcompany with existing sub-subcompanies.', 'error')
+        return redirect(url_for('clients.companies'))
+    
+    try:
+        # Delete the subcompany - related entities will cascade delete
+        db.session.delete(subcompany)
+        db.session.commit()
+        flash(f'Subcompany "{subcompany.name}" and all related data have been deleted successfully!', 'success')
+        return redirect(url_for('clients.companies'))
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the subcompany. Please try again.', 'error')
+        return redirect(url_for('clients.companies'))
+
 @bp.route('/invoices')
 @login_required
 def invoices():
-    invoices = Invoice.query.join(Brand).join(Company).order_by(Invoice.invoice_date.desc()).all()
-    return render_template('clients/invoices.html', invoices=invoices)
+    # Get filter and sort parameters
+    brand_id = request.args.get('brand_id', type=int)
+    company_id = request.args.get('company_id', type=int)
+    sort_by = request.args.get('sort_by', 'date')  # date or amount
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    # Build query
+    query = Invoice.query.join(Brand).join(Company)
+    
+    # Apply filters
+    if brand_id:
+        query = query.filter(Invoice.brand_id == brand_id)
+    if company_id:
+        query = query.filter(Brand.company_id == company_id)
+    
+    # Apply sorting
+    if sort_by == 'amount':
+        query = query.order_by(Invoice.total_amount.desc())
+    else:  # default to date
+        query = query.order_by(Invoice.invoice_date.desc())
+    
+    # Get paginated invoices
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    invoices = pagination.items
+    
+    # Get all brands and companies for filter dropdowns
+    brands = Brand.query.join(Company).order_by(Company.name, Brand.name).all()
+    companies = Company.query.order_by(Company.name).all()
+    
+    # Calculate total amount for current page
+    page_total = sum(invoice.total_amount for invoice in invoices)
+    
+    return render_template('clients/invoices.html', 
+                         invoices=invoices,
+                         brands=brands,
+                         companies=companies,
+                         pagination=pagination,
+                         selected_brand_id=brand_id,
+                         selected_company_id=company_id,
+                         sort_by=sort_by,
+                         page_total=page_total)
 
 @bp.route('/brand/<int:brand_id>/invoice/new', methods=['GET', 'POST'])
 @login_required
@@ -849,16 +996,33 @@ def new_invoice(brand_id):
             created_by_id=current_user.id
         )
         
-        if form.file.data:
-            filename = secure_filename(form.file.data.filename)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"invoice_{brand_id}_{timestamp}_{filename}"
-            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-            form.file.data.save(file_path)
-            invoice.filename = form.file.data.filename
-            invoice.file_path = filename
-        
         db.session.add(invoice)
+        db.session.flush()  # Get the invoice ID before saving files
+        
+        # Handle multiple file uploads
+        if form.files.data:
+            file_count = 0
+            for file in form.files.data:
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"invoice_{invoice.id}_{timestamp}_{filename}"
+                    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
+                    
+                    attachment = InvoiceAttachment(
+                        invoice_id=invoice.id,
+                        filename=file.filename,
+                        file_path=filename
+                    )
+                    db.session.add(attachment)
+                    file_count += 1
+                    
+                    # For backward compatibility, store first file in invoice table
+                    if file_count == 1:
+                        invoice.filename = file.filename
+                        invoice.file_path = filename
+        
         db.session.commit()
         flash('Invoice registered successfully!', 'success')
         return redirect(url_for('clients.brand_detail', brand_id=brand_id))

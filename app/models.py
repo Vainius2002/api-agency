@@ -360,8 +360,8 @@ class Invoice(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     invoice_date = db.Column(db.Date, nullable=False)
     short_info = db.Column(db.Text)
-    filename = db.Column(db.String(255))
-    file_path = db.Column(db.String(500))
+    filename = db.Column(db.String(255))  # Keep for backward compatibility
+    file_path = db.Column(db.String(500))  # Keep for backward compatibility
     total_amount = db.Column(db.Numeric(12, 2), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -369,3 +369,15 @@ class Invoice(db.Model):
     brand = db.relationship('Brand', back_populates='invoices')
     company = db.relationship('Company', back_populates='invoices')
     created_by = db.relationship('User', foreign_keys=[created_by_id])
+    attachments = db.relationship('InvoiceAttachment', back_populates='invoice', cascade='all, delete-orphan')
+
+class InvoiceAttachment(db.Model):
+    __tablename__ = 'invoice_attachments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id'), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    invoice = db.relationship('Invoice', back_populates='attachments')

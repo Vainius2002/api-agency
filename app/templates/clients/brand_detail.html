@@ -298,7 +298,7 @@
             <ul class="divide-y divide-gray-200">
                 {% for invoice in brand.invoices|sort(attribute='invoice_date', reverse=True) %}
                 <li class="px-4 py-4">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-start justify-between">
                         <div class="flex-1">
                             <p class="text-sm font-medium text-gray-900">
                                 {{ invoice.invoice_date.strftime('%Y-%m-%d') }} - {{ invoice.company.name }}
@@ -310,12 +310,24 @@
                                 <p class="text-sm text-gray-500">{{ invoice.short_info }}</p>
                             {% endif %}
                             <p class="text-sm font-medium text-gray-900 mt-1">EUR {{ "{:,.2f}".format(invoice.total_amount) }}</p>
-                        </div>
-                        <div class="ml-4">
-                            {% if invoice.file_path %}
-                                <a href="{{ url_for('clients.download_invoice', invoice_id=invoice.id) }}" class="text-indigo-600 hover:text-indigo-900 text-sm">
-                                    <i class="fas fa-download"></i> Download
+                            
+                            {% if invoice.attachments %}
+                            <div class="mt-2">
+                                <p class="text-xs text-gray-500 mb-1">Files:</p>
+                                <div class="space-y-1">
+                                    {% for attachment in invoice.attachments %}
+                                    <a href="{{ url_for('clients.uploaded_file', filename=attachment.file_path) }}" target="_blank" class="block text-sm text-indigo-600 hover:text-indigo-900">
+                                        <i class="fas fa-file-pdf text-xs"></i> {{ attachment.filename }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% elif invoice.file_path %}
+                            <div class="mt-2">
+                                <a href="{{ url_for('clients.download_invoice', invoice_id=invoice.id) }}" class="text-sm text-indigo-600 hover:text-indigo-900">
+                                    <i class="fas fa-file-pdf text-xs"></i> {{ invoice.filename or 'Download Invoice' }}
                                 </a>
+                            </div>
                             {% endif %}
                         </div>
                     </div>

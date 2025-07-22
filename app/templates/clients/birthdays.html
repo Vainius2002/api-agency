@@ -33,7 +33,9 @@
                             <div class="flex items-center">
                                 <div>
                                     <div class="text-sm font-medium text-gray-900">
-                                        {{ contact.first_name }} {{ contact.last_name }}
+                                        <a href="{{ url_for('clients.contact_detail', contact_id=contact.id) }}" class="text-indigo-600 hover:text-indigo-900">
+                                            {{ contact.first_name }} {{ contact.last_name }}
+                                        </a>
                                     </div>
                                     <div class="text-sm text-gray-500">{{ contact.email }}</div>
                                 </div>
