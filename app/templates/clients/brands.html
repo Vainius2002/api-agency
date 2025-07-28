@@ -15,9 +15,44 @@
     </div>
 </div>
 
+<!-- Filter Section -->
+<div class="mt-6 bg-white shadow sm:rounded-lg p-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+            <label for="search" class="block text-sm font-medium text-gray-700">Search</label>
+            <input type="text" id="search" placeholder="Search company, brand, or subbrand..." 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        </div>
+        <div>
+            <label for="keyPerson" class="block text-sm font-medium text-gray-700">Key Person</label>
+            <select id="keyPerson" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                <option value="">All Key Persons</option>
+                {% set key_persons = [] %}
+                {% for brand in brands %}
+                    {% set key_person = brand.team_members|selectattr('is_key_responsible', 'equalto', true)|first %}
+                    {% if key_person and key_person.team_member.id not in key_persons|map(attribute='id')|list %}
+                        {% set _ = key_persons.append(key_person.team_member) %}
+                    {% endif %}
+                {% endfor %}
+                {% for person in key_persons|sort(attribute='last_name') %}
+                    <option value="{{ person.first_name }} {{ person.last_name }}">{{ person.first_name }} {{ person.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="sortUpdate" class="block text-sm font-medium text-gray-700">Sort by Last Update</label>
+            <select id="sortUpdate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                <option value="">Default Order</option>
+                <option value="oldest">Oldest First</option>
+                <option value="newest">Newest First</option>
+            </select>
+        </div>
+    </div>
+</div>
+
 <div class="mt-6">
     <div class="overflow-hidden bg-white shadow sm:rounded-md">
-        <table class="min-w-full divide-y divide-gray-200">
+        <table class="min-w-full divide-y divide-gray-200" id="brandsTable">
             <thead class="bg-gray-50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand / Company</th>
@@ -30,7 +65,14 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for brand in brands %}
-                <tr class="hover:bg-gray-50">
+                {% set key_person = brand.team_members|selectattr('is_key_responsible', 'equalto', true)|first %}
+                {% set latest_update = brand.status_updates|sort(attribute='date', reverse=True)|first %}
+                <tr class="hover:bg-gray-50 brand-row" 
+                    data-brand-name="{{ brand.name|lower }}"
+                    data-company-name="{{ brand.company.name|lower }}"
+                    data-subbrands="{% for subbrand in brand.subbrands %}{{ subbrand.name|lower }} {% endfor %}"
+                    data-key-person="{% if key_person %}{{ key_person.team_member.first_name }} {{ key_person.team_member.last_name }}{% endif %}"
+                    data-update-date="{% if latest_update %}{{ latest_update.date.isoformat() }}{% else %}1900-01-01{% endif %}">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div>
                             <div class="text-sm font-medium text-gray-900">{{ brand.name }}</div>
@@ -45,7 +87,6 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        {% set key_person = brand.team_members|selectattr('is_key_responsible', 'equalto', true)|first %}
                         {% if key_person %}
                             <div class="text-sm text-gray-900">{{ key_person.team_member.first_name }} {{ key_person.team_member.last_name }}</div>
                             <div class="text-sm text-gray-500">{{ key_person.team_member.role.replace('_', ' ').title() }}</div>
@@ -54,7 +95,6 @@
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        {% set latest_update = brand.status_updates|sort(attribute='date', reverse=True)|first %}
                         {% if latest_update %}
                             {% if latest_update.evaluation == 'perfect' %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -104,4 +144,78 @@
         </table>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const keyPersonSelect = document.getElementById('keyPerson');
+    const sortUpdateSelect = document.getElementById('sortUpdate');
+    const tableBody = document.querySelector('#brandsTable tbody');
+    const rows = Array.from(document.querySelectorAll('.brand-row'));
+    
+    function filterAndSortBrands() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedKeyPerson = keyPersonSelect.value;
+        const sortOrder = sortUpdateSelect.value;
+        
+        // Filter rows
+        let visibleRows = rows.filter(row => {
+            // Search filter
+            const brandName = row.getAttribute('data-brand-name');
+            const companyName = row.getAttribute('data-company-name');
+            const subbrands = row.getAttribute('data-subbrands');
+            const searchMatch = brandName.includes(searchTerm) || 
+                              companyName.includes(searchTerm) || 
+                              subbrands.includes(searchTerm);
+            
+            // Key person filter
+            const keyPerson = row.getAttribute('data-key-person');
+            const keyPersonMatch = !selectedKeyPerson || keyPerson === selectedKeyPerson;
+            
+            // Show/hide row based on filters
+            const shouldShow = searchMatch && keyPersonMatch;
+            row.style.display = shouldShow ? '' : 'none';
+            
+            return shouldShow;
+        });
+        
+        // Sort visible rows
+        if (sortOrder) {
+            visibleRows.sort((a, b) => {
+                const dateA = a.getAttribute('data-update-date');
+                const dateB = b.getAttribute('data-update-date');
+                
+                if (sortOrder === 'oldest') {
+                    return dateA.localeCompare(dateB);
+                } else {
+                    return dateB.localeCompare(dateA);
+                }
+            });
+            
+            // Reorder rows in the table
+            visibleRows.forEach(row => {
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Show "no results" message if needed
+        const noResultsRow = document.getElementById('no-results-row');
+        if (visibleRows.length === 0) {
+            if (!noResultsRow) {
+                const newRow = document.createElement('tr');
+                newRow.id = 'no-results-row';
+                newRow.innerHTML = '<td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No brands match your filters.</td>';
+                tableBody.appendChild(newRow);
+            }
+        } else if (noResultsRow) {
+            noResultsRow.remove();
+        }
+    }
+    
+    // Add event listeners
+    searchInput.addEventListener('input', filterAndSortBrands);
+    keyPersonSelect.addEventListener('change', filterAndSortBrands);
+    sortUpdateSelect.addEventListener('change', filterAndSortBrands);
+});
+</script>
 {% endblock %}

@@ -90,7 +90,7 @@
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
         <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
             <h3 class="text-lg leading-6 font-medium text-gray-900">Contacts</h3>
-            <a href="{{ url_for('clients.new_contact', brand_id=brand.id) }}" class="text-sm text-indigo-600 hover:text-indigo-500">
+            <a href="{{ url_for('clients.assign_contact', brand_id=brand.id) }}" class="text-sm text-indigo-600 hover:text-indigo-500">
                 <i class="fas fa-plus mr-1"></i> Add Contact
             </a>
         </div>

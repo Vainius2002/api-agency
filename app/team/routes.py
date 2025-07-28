@@ -5,7 +5,7 @@ from app.models import User
 from app import db
 from app.auth.forms import RegistrationForm
 from wtforms import PasswordField
-from wtforms.validators import Optional
+from wtforms.validators import Optional, ValidationError
 
 class TeamMemberForm(RegistrationForm):
     password = PasswordField('Password', validators=[Optional()])
@@ -16,6 +16,14 @@ class TeamMemberForm(RegistrationForm):
         self.user = user
         if user:
             self.submit.label.text = 'Update Team Member'
+    
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user is not None:
+            # If editing, allow the same email for the current user
+            if self.user and self.user.id == user.id:
+                return
+            raise ValidationError('Please use a different email address.')
 
 @bp.route('/')
 @login_required

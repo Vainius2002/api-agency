@@ -163,6 +163,12 @@ def brands():
 @login_required
 def new_brand():
     form = BrandForm()
+    
+    # Pre-select company if company_id is in query params
+    company_id = request.args.get('company_id', type=int)
+    if company_id and request.method == 'GET':
+        form.company_id.data = company_id
+    
     if form.validate_on_submit():
         brand = Brand(
             name=form.name.data,
@@ -195,7 +201,24 @@ def edit_brand(brand_id):
         flash('Brand updated successfully!', 'success')
         return redirect(url_for('clients.brand_detail', brand_id=brand.id))
     
-    return render_template('clients/brand_form.html', form=form, title='Edit Brand')
+    return render_template('clients/brand_form.html', form=form, title='Edit Brand', brand=brand)
+
+@bp.route('/brand/<int:brand_id>/delete', methods=['POST'])
+@login_required
+def delete_brand(brand_id):
+    brand = Brand.query.get_or_404(brand_id)
+    company_id = brand.company_id
+    
+    try:
+        # Delete all related records first (subbrands will be cascade deleted)
+        db.session.delete(brand)
+        db.session.commit()
+        flash('Brand deleted successfully!', 'success')
+        return redirect(url_for('clients.company_detail', company_id=company_id))
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting brand. Please try again.', 'error')
+        return redirect(url_for('clients.brand_detail', brand_id=brand_id))
 
 @bp.route('/brand/<int:brand_id>/subbrand/new', methods=['GET', 'POST'])
 @login_required
@@ -214,6 +237,38 @@ def new_subbrand(brand_id):
         return redirect(url_for('clients.brand_detail', brand_id=brand_id))
     
     return render_template('clients/subbrand_form.html', form=form, brand=brand)
+
+@bp.route('/brand/<int:brand_id>/assign-contact', methods=['GET', 'POST'])
+@login_required
+def assign_contact(brand_id):
+    brand = Brand.query.get_or_404(brand_id)
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'existing':
+            # Assign existing contacts
+            contact_ids = request.form.getlist('contact_ids')
+            for contact_id in contact_ids:
+                contact = ClientContact.query.get(contact_id)
+                if contact and contact not in brand.contacts:
+                    brand.contacts.append(contact)
+            
+            db.session.commit()
+            flash('Contacts assigned successfully!', 'success')
+            return redirect(url_for('clients.brand_detail', brand_id=brand_id))
+        
+        elif action == 'new':
+            # Redirect to new contact form with brand pre-selected
+            return redirect(url_for('clients.new_contact', brand_id=brand_id))
+    
+    # Get all contacts not already assigned to this brand
+    assigned_contact_ids = [c.id for c in brand.contacts]
+    available_contacts = ClientContact.query.filter(
+        ~ClientContact.id.in_(assigned_contact_ids) if assigned_contact_ids else True
+    ).order_by(ClientContact.last_name, ClientContact.first_name).all()
+    
+    return render_template('clients/assign_contact.html', brand=brand, available_contacts=available_contacts)
 
 @bp.route('/brand/<int:brand_id>/team', methods=['GET', 'POST'])
 @login_required
@@ -243,7 +298,7 @@ def assign_team(brand_id):
         form.team_members.data = [a.team_member_id for a in current_assignments]
         key_responsible = next((a for a in current_assignments if a.is_key_responsible), None)
         if key_responsible:
-            form.key_responsible_id.data = key_responsible.team_member_id
+            form.key_responsible_id.data = str(key_responsible.team_member_id)
     
     return render_template('clients/assign_team.html', form=form, brand=brand)
 
