@@ -5,7 +5,14 @@
 {% block content %}
 <div class="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
     <div>
-        <h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ brand.name }}</h3>
+        <h3 class="text-2xl font-semibold leading-6 text-gray-900">
+            {{ brand.name }}
+            <a href="{{ url_for('clients.new_subbrand', brand_id=brand.id) }}" 
+               class="ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white"
+               title="Add Subbrand">
+                <i class="fas fa-plus text-xs"></i>
+            </a>
+        </h3>
         <p class="mt-1 max-w-2xl text-sm text-gray-500">
             {{ brand.company.name }}
             {% if brand.status == 'active' %}
@@ -18,8 +25,23 @@
                 </span>
             {% endif %}
         </p>
+        {% if brand.subbrands %}
+        <div class="mt-2">
+            <p class="text-sm text-gray-600">Subbrands:</p>
+            <ul class="mt-1 space-y-1">
+                {% for subbrand in brand.subbrands %}
+                <li class="text-sm text-gray-500">
+                    → {{ subbrand.name }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
     </div>
     <div class="mt-3 flex sm:mt-0 sm:ml-4 space-x-3">
+        <a href="{{ url_for('clients.edit_brand', brand_id=brand.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <i class="fas fa-edit mr-2"></i> Edit
+        </a>
         <a href="{{ url_for('clients.assign_team', brand_id=brand.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
             <i class="fas fa-users mr-2"></i> Manage Team
         </a>

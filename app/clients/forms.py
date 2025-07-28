@@ -56,6 +56,10 @@ class BrandForm(FlaskForm):
         super(BrandForm, self).__init__(*args, **kwargs)
         self.company_id.choices = [(c.id, c.name) for c in Company.query.filter_by(status='active').order_by(Company.name).all()]
 
+class SubbrandForm(FlaskForm):
+    name = StringField('Subbrand Name', validators=[DataRequired(), Length(max=200)])
+    submit = SubmitField('Add Subbrand')
+
 class ClientContactForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired(), Length(max=100)])
     last_name = StringField('Last Name', validators=[DataRequired(), Length(max=100)])

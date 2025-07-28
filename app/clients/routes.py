@@ -1,19 +1,22 @@
 import os
 from datetime import datetime, timedelta
-from flask import render_template, redirect, url_for, flash, request, current_app, send_from_directory, abort
+from flask import render_template, redirect, url_for, flash, request, current_app, send_from_directory, abort, Response
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from wtforms import SelectField
 from wtforms.validators import DataRequired
 from app.clients import bp
+from openpyxl import Workbook
+from io import BytesIO
 from app.clients.forms import (CompanyForm, AgreementForm, BrandForm, ClientContactForm, 
                               BrandTeamForm, PlanningInfoForm, CommitmentForm, 
                               StatusUpdateForm, MediaGroupForm, KeyMeetingForm, KeyLinkForm, GiftForm,
-                              TaskTemplateForm, BrandTaskForm, TaskCompletionForm, SubcompanyForm, InvoiceForm)
+                              TaskTemplateForm, BrandTaskForm, TaskCompletionForm, SubcompanyForm, InvoiceForm,
+                              SubbrandForm)
 from app.models import (Company, Agreement, Brand, ClientContact, BrandTeam, 
                        PlanningInfo, Commitment, StatusUpdate, MediaGroup, User,
                        KeyMeeting, KeyLink, PlanningAttachment, MeetingAttachment, Gift,
-                       TaskTemplate, BrandTask, TaskCompletion, Invoice, InvoiceAttachment)
+                       TaskTemplate, BrandTask, TaskCompletion, Invoice, InvoiceAttachment, Subbrand)
 from app import db
 
 def allowed_file(filename):
@@ -177,6 +180,40 @@ def new_brand():
 def brand_detail(brand_id):
     brand = Brand.query.get_or_404(brand_id)
     return render_template('clients/brand_detail.html', brand=brand)
+
+@bp.route('/brand/<int:brand_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_brand(brand_id):
+    brand = Brand.query.get_or_404(brand_id)
+    form = BrandForm(obj=brand)
+    
+    if form.validate_on_submit():
+        brand.name = form.name.data
+        brand.company_id = form.company_id.data
+        brand.status = form.status.data
+        db.session.commit()
+        flash('Brand updated successfully!', 'success')
+        return redirect(url_for('clients.brand_detail', brand_id=brand.id))
+    
+    return render_template('clients/brand_form.html', form=form, title='Edit Brand')
+
+@bp.route('/brand/<int:brand_id>/subbrand/new', methods=['GET', 'POST'])
+@login_required
+def new_subbrand(brand_id):
+    brand = Brand.query.get_or_404(brand_id)
+    form = SubbrandForm()
+    
+    if form.validate_on_submit():
+        subbrand = Subbrand(
+            name=form.name.data,
+            brand_id=brand_id
+        )
+        db.session.add(subbrand)
+        db.session.commit()
+        flash('Subbrand added successfully!', 'success')
+        return redirect(url_for('clients.brand_detail', brand_id=brand_id))
+    
+    return render_template('clients/subbrand_form.html', form=form, brand=brand)
 
 @bp.route('/brand/<int:brand_id>/team', methods=['GET', 'POST'])
 @login_required
@@ -1036,3 +1073,170 @@ def download_invoice(invoice_id):
     if invoice.file_path:
         return send_from_directory(current_app.config['UPLOAD_FOLDER'], invoice.file_path, 
                                  as_attachment=True, download_name=invoice.filename)
+
+@bp.route('/brands/export')
+@login_required
+def export_brands():
+    # Create workbook and worksheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Brands"
+    
+    # Add headers
+    headers = ['Company', 'Brand', 'Subbrands', 'Status', 'Key Responsible', 'Last Update', 'Risk Level']
+    ws.append(headers)
+    
+    # Get all brands
+    brands = Brand.query.join(Company).order_by(Company.name, Brand.name).all()
+    
+    # Add data rows
+    for brand in brands:
+        # Get key responsible
+        key_responsible = None
+        for tm in brand.team_members:
+            if tm.is_key_responsible:
+                key_responsible = f"{tm.team_member.first_name} {tm.team_member.last_name}"
+                break
+        
+        # Get latest status update
+        latest_update = None
+        risk_level = None
+        if brand.status_updates:
+            latest_update = max(brand.status_updates, key=lambda x: x.date)
+            risk_level = latest_update.evaluation
+            latest_update = latest_update.date.strftime('%Y-%m-%d')
+        
+        # Get subbrands
+        subbrands = ', '.join([sb.name for sb in brand.subbrands])
+        
+        row = [
+            brand.company.name,
+            brand.name,
+            subbrands,
+            brand.status,
+            key_responsible or 'Not assigned',
+            latest_update or 'Never updated',
+            risk_level or 'No evaluation'
+        ]
+        ws.append(row)
+    
+    # Save to BytesIO object
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Return as download
+    return Response(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=brands_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'}
+    )
+
+@bp.route('/contacts/export')
+@login_required
+def export_contacts():
+    # Create workbook and worksheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Contacts"
+    
+    # Add headers
+    headers = ['First Name', 'Last Name', 'Email', 'Phone', 'LinkedIn', 'Birthday', 'Brands', 'Should Get Gift', 'Newsletter', 'Status']
+    ws.append(headers)
+    
+    # Get all contacts
+    contacts = ClientContact.query.order_by(ClientContact.last_name, ClientContact.first_name).all()
+    
+    # Add data rows
+    for contact in contacts:
+        # Get associated brands
+        brands = ', '.join([f"{b.name} ({b.company.name})" for b in contact.brands])
+        
+        # Format birthday
+        birthday = ''
+        if contact.birthday_month and contact.birthday_day:
+            birthday = f"{contact.birthday_month:02d}-{contact.birthday_day:02d}"
+        
+        row = [
+            contact.first_name,
+            contact.last_name,
+            contact.email,
+            contact.phone or '',
+            contact.linkedin_url or '',
+            birthday,
+            brands,
+            'Yes' if contact.should_get_gift else 'No',
+            'Yes' if contact.receive_newsletter else 'No',
+            contact.status
+        ]
+        ws.append(row)
+    
+    # Save to BytesIO object
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Return as download
+    return Response(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=contacts_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'}
+    )
+
+@bp.route('/companies/export')
+@login_required
+def export_companies():
+    # Create workbook and worksheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Companies"
+    
+    # Add headers
+    headers = ['Company Name', 'VAT Code', 'Registration Number', 'Address', 'Bank Account', 
+               'Agency Fees', 'Parent Company', 'Brands', 'Active Service Agreement', 
+               'Active Data Agreement', 'Status']
+    ws.append(headers)
+    
+    # Get all companies
+    companies = Company.query.order_by(Company.name).all()
+    
+    # Add data rows
+    for company in companies:
+        # Get brands
+        brands = ', '.join([b.name for b in company.brands])
+        
+        # Check agreements
+        has_service = 'No'
+        has_data = 'No'
+        for agreement in company.agreements:
+            if agreement.type == 'service' and (not agreement.valid_until or agreement.valid_until >= datetime.now().date()):
+                has_service = 'Yes'
+            elif agreement.type == 'data' and (not agreement.valid_until or agreement.valid_until >= datetime.now().date()):
+                has_data = 'Yes'
+        
+        row = [
+            company.name,
+            company.vat_code or '',
+            company.registration_number or '',
+            company.address or '',
+            company.bank_account or '',
+            company.agency_fees or '',
+            company.parent_company.name if company.parent_company else '',
+            brands,
+            has_service,
+            has_data,
+            company.status
+        ]
+        ws.append(row)
+    
+    # Save to BytesIO object
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Return as download
+    return Response(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename=companies_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'}
+    )

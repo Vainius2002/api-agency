@@ -5,7 +5,10 @@
 {% block content %}
 <div class="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
     <h3 class="text-2xl font-semibold leading-6 text-gray-900">Brands</h3>
-    <div class="mt-3 sm:mt-0 sm:ml-4">
+    <div class="mt-3 sm:mt-0 sm:ml-4 space-x-3">
+        <a href="{{ url_for('clients.export_brands') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <i class="fas fa-file-excel mr-2"></i> Export to Excel
+        </a>
         <a href="{{ url_for('clients.new_brand') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
             <i class="fas fa-plus mr-2"></i> New Brand
         </a>
@@ -31,6 +34,13 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div>
                             <div class="text-sm font-medium text-gray-900">{{ brand.name }}</div>
+                            {% if brand.subbrands %}
+                            <div class="text-xs text-gray-500 mt-1">
+                                {% for subbrand in brand.subbrands %}
+                                    <span class="inline-block">→ {{ subbrand.name }}{% if not loop.last %}, {% endif %}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                             <div class="text-sm text-gray-500">{{ brand.company.name }}</div>
                         </div>
                     </td>

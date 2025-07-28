@@ -52,6 +52,7 @@
                         <tr class="hover:bg-gray-50 brand-row" 
                             data-brand-name="{{ data.brand.name|lower }}"
                             data-company-name="{{ data.brand.company.name|lower }}"
+                            data-subbrand-names="{% for subbrand in data.brand.subbrands %}{{ subbrand.name|lower }} {% endfor %}"
                             data-update-days="{{ data.days_since_update or 999999 }}"
                             data-invoice-date="{{ data.last_invoice_date.isoformat() if data.last_invoice_date else '1900-01-01' }}"
                             data-meeting-days="{{ data.days_since_meeting or 999999 }}">
@@ -59,6 +60,13 @@
                                 <a href="{{ url_for('clients.brand_detail', brand_id=data.brand.id) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-900">
                                     {{ data.brand.name }}
                                 </a>
+                                {% if data.brand.subbrands %}
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {% for subbrand in data.brand.subbrands %}
+                                        <span class="inline-block">→ {{ subbrand.name }}{% if not loop.last %}, {% endif %}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                                 <p class="text-xs text-gray-500">{{ data.brand.company.name }}</p>
                             </td>
                             <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -147,8 +155,11 @@ document.addEventListener('DOMContentLoaded', function() {
         rows.forEach(row => {
             const brandName = row.getAttribute('data-brand-name');
             const companyName = row.getAttribute('data-company-name');
+            const subbrandNames = row.getAttribute('data-subbrand-names');
             
-            if (brandName.includes(filterValue) || companyName.includes(filterValue)) {
+            if (brandName.includes(filterValue) || 
+                companyName.includes(filterValue) || 
+                subbrandNames.includes(filterValue)) {
                 row.style.display = '';
                 visibleCount++;
             } else {

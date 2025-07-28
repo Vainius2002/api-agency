@@ -80,9 +80,23 @@ class Brand(db.Model):
                               cascade='all, delete-orphan', order_by='KeyLink.created_at.desc()')
     invoices = db.relationship('Invoice', back_populates='brand', cascade='all, delete-orphan')
     brand_tasks = db.relationship('BrandTask', back_populates='brand', cascade='all, delete-orphan')
+    subbrands = db.relationship('Subbrand', back_populates='brand', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Brand {self.name}>'
+
+class Subbrand(db.Model):
+    __tablename__ = 'subbrands'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    brand_id = db.Column(db.Integer, db.ForeignKey('brands.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    brand = db.relationship('Brand', back_populates='subbrands')
+    
+    def __repr__(self):
+        return f'<Subbrand {self.name}>'
 
 class ClientContact(db.Model):
     __tablename__ = 'client_contacts'
