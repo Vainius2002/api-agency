@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ title }}</h3>
+</div>
+
+<div class="mt-6 max-w-3xl">
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        
+        <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
+            <div>
+                {{ form.name.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.name(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.name.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.name.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.company_id.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.company_id(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.company_id.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.company_id.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.status.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.status(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.status.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.status.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 py-3 bg-gray-50 sm:px-6 flex justify-between">
+            <div>
+                {% if brand is defined and brand %}
+                <button type="button" onclick="deleteBrand()" class="inline-flex justify-center rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50">
+                    <i class="fas fa-trash mr-2"></i> Delete Brand
+                </button>
+                {% endif %}
+            </div>
+            <div class="space-x-3">
+                <a href="{{ url_for('clients.brands') }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                    Cancel
+                </a>
+                {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700") }}
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if brand is defined and brand %}
+<form id="delete-form" method="POST" action="{{ url_for('clients.delete_brand', brand_id=brand.id) }}" style="display: none;">
+    {{ form.csrf_token }}
+</form>
+{% endif %}
+
+<script>
+function deleteBrand() {
+    if (confirm('Are you sure you want to delete this brand? This action cannot be undone.')) {
+        document.getElementById('delete-form').submit();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Select2 for company dropdown
+    const companySelect = document.getElementById('company_id');
+    if (companySelect && typeof $ !== 'undefined' && $.fn.select2) {
+        $(companySelect).select2({
+            placeholder: 'Search for a company...',
+            allowClear: false,
+            width: '100%'
+        });
+    } else {
+        // Fallback: Add basic search functionality without Select2
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Type to filter companies...';
+        searchInput.className = 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm mb-2';
+        
+        companySelect.parentNode.insertBefore(wrapper, companySelect);
+        wrapper.appendChild(searchInput);
+        wrapper.appendChild(companySelect);
+        
+        const options = Array.from(companySelect.options);
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            options.forEach(option => {
+                if (option.text.toLowerCase().includes(searchTerm) || option.value === '') {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

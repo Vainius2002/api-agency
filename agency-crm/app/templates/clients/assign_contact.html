@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Contacts to {{ brand.name }} - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">Assign Contacts to {{ brand.name }}</h3>
+    <p class="mt-1 text-sm text-gray-500">{{ brand.company.name }}</p>
+</div>
+
+<div class="mt-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Choose an Option</h3>
+        </div>
+        <div class="border-t border-gray-200 p-6">
+            <!-- Tab buttons -->
+            <div class="mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8">
+                        <button type="button" id="existing-tab" class="tab-button border-b-2 border-indigo-500 py-2 px-1 text-sm font-medium text-indigo-600">
+                            Select Existing Contacts
+                        </button>
+                        <button type="button" id="new-tab" class="tab-button border-b-2 border-transparent py-2 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Create New Contact
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Existing contacts tab -->
+            <div id="existing-content" class="tab-content">
+                {% if available_contacts %}
+                <form method="POST" action="">
+                    <input type="hidden" name="action" value="existing">
+                    
+                    <div class="mb-4">
+                        <input type="text" id="contact-search" placeholder="Search contacts..." 
+                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    </div>
+                    
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        {% for contact in available_contacts %}
+                        <label class="contact-item flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" name="contact_ids" value="{{ contact.id }}" 
+                                   class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded mt-1">
+                            <div class="ml-3">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ contact.first_name }} {{ contact.last_name }}
+                                </div>
+                                <div class="text-sm text-gray-500">{{ contact.email }}</div>
+                                {% if contact.phone %}
+                                    <div class="text-sm text-gray-500">{{ contact.phone }}</div>
+                                {% endif %}
+                                {% if contact.brands %}
+                                    <div class="text-xs text-gray-400 mt-1">
+                                        Also in: {{ contact.brands|map(attribute='name')|join(', ') }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <a href="{{ url_for('clients.brand_detail', brand_id=brand.id) }}" 
+                           class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                            Cancel
+                        </a>
+                        <button type="submit" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                            Assign Selected Contacts
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <p class="text-gray-500">All contacts are already assigned to this brand.</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('clients.new_contact', brand_id=brand.id) }}" 
+                       class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                        Create New Contact
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- New contact tab -->
+            <div id="new-content" class="tab-content hidden">
+                <p class="text-gray-500 mb-4">Create a new contact and automatically assign it to this brand.</p>
+                <form method="POST" action="">
+                    <input type="hidden" name="action" value="new">
+                    <button type="submit" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                        <i class="fas fa-plus mr-2"></i> Create New Contact
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab functionality
+    const existingTab = document.getElementById('existing-tab');
+    const newTab = document.getElementById('new-tab');
+    const existingContent = document.getElementById('existing-content');
+    const newContent = document.getElementById('new-content');
+    
+    existingTab.addEventListener('click', function() {
+        existingTab.classList.add('border-indigo-500', 'text-indigo-600');
+        existingTab.classList.remove('border-transparent', 'text-gray-500');
+        newTab.classList.remove('border-indigo-500', 'text-indigo-600');
+        newTab.classList.add('border-transparent', 'text-gray-500');
+        existingContent.classList.remove('hidden');
+        newContent.classList.add('hidden');
+    });
+    
+    newTab.addEventListener('click', function() {
+        newTab.classList.add('border-indigo-500', 'text-indigo-600');
+        newTab.classList.remove('border-transparent', 'text-gray-500');
+        existingTab.classList.remove('border-indigo-500', 'text-indigo-600');
+        existingTab.classList.add('border-transparent', 'text-gray-500');
+        newContent.classList.remove('hidden');
+        existingContent.classList.add('hidden');
+    });
+    
+    // Search functionality
+    const searchInput = document.getElementById('contact-search');
+    const contactItems = document.querySelectorAll('.contact-item');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            contactItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

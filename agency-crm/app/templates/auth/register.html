@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+            Create your account
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+            Or
+            <a href="{{ url_for('auth.login') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
+                sign in to existing account
+            </a>
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
+            <form class="space-y-6" method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div>
+                    {{ form.email.label(class="block text-sm font-medium text-gray-700") }}
+                    <div class="mt-1">
+                        {{ form.email(class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm") }}
+                        {% if form.email.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.email.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        {{ form.first_name.label(class="block text-sm font-medium text-gray-700") }}
+                        <div class="mt-1">
+                            {{ form.first_name(class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm") }}
+                            {% if form.first_name.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.first_name.errors[0] }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        {{ form.last_name.label(class="block text-sm font-medium text-gray-700") }}
+                        <div class="mt-1">
+                            {{ form.last_name(class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm") }}
+                            {% if form.last_name.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.last_name.errors[0] }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    {{ form.phone.label(class="block text-sm font-medium text-gray-700") }}
+                    <div class="mt-1">
+                        {{ form.phone(class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm") }}
+                        {% if form.phone.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.phone.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    {{ form.birthday.label(class="block text-sm font-medium text-gray-700") }}
+                    <div class="mt-1">
+                        {{ form.birthday(class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm") }}
+                        {% if form.birthday.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.birthday.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    {{ form.role.label(class="block text-sm font-medium text-gray-700") }}
+                    <div class="mt-1">
+                        {{ form.role(class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm") }}
+                        {% if form.role.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.role.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    {{ form.password.label(class="block text-sm font-medium text-gray-700") }}
+                    <div class="mt-1">
+                        {{ form.password(class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm") }}
+                        {% if form.password.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.password.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    {{ form.password2.label(class="block text-sm font-medium text-gray-700") }}
+                    <div class="mt-1">
+                        {{ form.password2(class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm") }}
+                        {% if form.password2.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.password2.errors[0] }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    {{ form.submit(class="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Webhooks Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Webhooks Management</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Create New Webhook</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('api.create_webhook') }}">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Webhook Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required 
+                           placeholder="e.g., NewBusiness Sync">
+                </div>
+                <div class="mb-3">
+                    <label for="url" class="form-label">Webhook URL</label>
+                    <input type="url" class="form-control" id="url" name="url" required 
+                           placeholder="https://example.com/webhook">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Events to Subscribe</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="events" value="company.created" id="company_created">
+                        <label class="form-check-label" for="company_created">Company Created</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="events" value="company.updated" id="company_updated">
+                        <label class="form-check-label" for="company_updated">Company Updated</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="events" value="brand.created" id="brand_created">
+                        <label class="form-check-label" for="brand_created">Brand Created</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="events" value="brand.updated" id="brand_updated">
+                        <label class="form-check-label" for="brand_updated">Brand Updated</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="events" value="contact.created" id="contact_created">
+                        <label class="form-check-label" for="contact_created">Contact Created</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="events" value="invoice.created" id="invoice_created">
+                        <label class="form-check-label" for="invoice_created">Invoice Created</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="events" value="status_update.created" id="status_update_created">
+                        <label class="form-check-label" for="status_update_created">Status Update Created</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Webhook</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Your Webhooks</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>URL</th>
+                            <th>Events</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Last Triggered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for webhook in webhooks %}
+                        <tr>
+                            <td>{{ webhook.name }}</td>
+                            <td><small>{{ webhook.url[:50] }}{% if webhook.url|length > 50 %}...{% endif %}</small></td>
+                            <td>
+                                {% for event in webhook.events %}
+                                    <span class="badge bg-info">{{ event }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if webhook.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ webhook.created_at.strftime('%Y-%m-%d') if webhook.created_at else 'N/A' }}</td>
+                            <td>{{ webhook.last_triggered_at.strftime('%Y-%m-%d %H:%M') if webhook.last_triggered_at else 'Never' }}</td>
+                            <td>
+                                <form method="POST" style="display: inline;">
+                                    <button formaction="{{ url_for('api.toggle_webhook', webhook_id=webhook.id) }}" 
+                                            class="btn btn-sm btn-warning">
+                                        {% if webhook.is_active %}Deactivate{% else %}Activate{% endif %}
+                                    </button>
+                                    <button formaction="{{ url_for('api.delete_webhook', webhook_id=webhook.id) }}" 
+                                            class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Are you sure you want to delete this webhook?')">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">No webhooks found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

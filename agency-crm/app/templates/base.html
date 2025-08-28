@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Agency CRM{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .group:hover .group-hover\:opacity-100 {
+            opacity: 1;
+        }
+        .group:hover .group-hover\:visible {
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="h-full">
+    <div class="min-h-full">
+        {% if current_user.is_authenticated %}
+        <nav class="bg-gray-800">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex h-16 items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <h1 class="text-white text-xl font-bold">Agency CRM</h1>
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="ml-10 flex items-baseline space-x-4">
+                                <a href="{{ url_for('dashboard.index') }}" 
+                                   class="{% if request.endpoint == 'dashboard.index' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Dashboard
+                                </a>
+                                
+                                <!-- Status Updates Dropdown -->
+                                <div class="relative group">
+                                    <button class="{% if request.endpoint and ('status_update' in request.endpoint or 'task' in request.endpoint) %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium inline-flex items-center">
+                                        Status Updates
+                                        <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                        <div class="py-1">
+                                            <a href="{{ url_for('clients.status_updates') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">All Status Updates</a>
+                                            <a href="{{ url_for('clients.tasks') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tasks</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Brands Dropdown -->
+                                <div class="relative group">
+                                    <button class="{% if request.endpoint and ('brand' in request.endpoint or 'compan' in request.endpoint or 'invoice' in request.endpoint) %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium inline-flex items-center">
+                                        Brands
+                                        <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                        <div class="py-1">
+                                            <a href="{{ url_for('clients.brands') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">All Brands</a>
+                                            <a href="{{ url_for('clients.companies') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Companies</a>
+                                            <a href="{{ url_for('clients.invoices') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Invoices</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Contacts Dropdown -->
+                                <div class="relative group">
+                                    <button class="{% if request.endpoint and ('contact' in request.endpoint or 'birthday' in request.endpoint) %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium inline-flex items-center">
+                                        Contacts
+                                        <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                        <div class="py-1">
+                                            <a href="{{ url_for('clients.contacts') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">All Contacts</a>
+                                            <a href="{{ url_for('clients.birthdays') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Birthdays</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <a href="{{ url_for('team.index') }}" 
+                                   class="{% if 'team' in request.endpoint %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} rounded-md px-3 py-2 text-sm font-medium">
+                                    Team
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-4 flex items-center md:ml-6">
+                            <div class="relative ml-3">
+                                <div class="flex items-center space-x-4">
+                                    <span class="text-gray-300 text-sm">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                                    <a href="{{ url_for('auth.logout') }}" class="text-gray-300 hover:text-white text-sm">
+                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        {% endif %}
+
+        <main class="{% if current_user.is_authenticated %}py-6{% endif %}">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="mb-4 rounded-md p-4 {% if category == 'error' %}bg-red-50 text-red-800{% elif category == 'success' %}bg-green-50 text-green-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        {% if category == 'error' %}
+                                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                                        {% elif category == 'success' %}
+                                            <i class="fas fa-check-circle text-green-400"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-blue-400"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium">{{ message }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

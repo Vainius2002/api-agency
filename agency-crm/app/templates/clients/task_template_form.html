@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ title }}</h3>
+    <p class="mt-1 text-sm text-gray-500">Create a reusable task template that can be assigned to brands</p>
+</div>
+
+<div class="mt-6 max-w-3xl">
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        
+        <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
+            <div>
+                {{ form.name.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.name(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.name.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.name.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                <p class="mt-1 text-sm text-gray-500">A unique name for this task template</p>
+            </div>
+
+            <div>
+                {{ form.description.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.description(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", rows=3) }}
+                    {% if form.description.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.description.errors[0] }}</p>
+                    {% endif %}
+                </div>
+                <p class="mt-1 text-sm text-gray-500">Optional description to help users understand what this task involves</p>
+            </div>
+        </div>
+
+        <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 space-x-3">
+            <a href="{{ url_for('clients.task_templates') }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                Cancel
+            </a>
+            {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700") }}
+        </div>
+    </form>
+</div>
+
+<div class="mt-8 max-w-3xl">
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-400"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">About Task Templates</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <p>Task templates are reusable task definitions that can be assigned to different brands with different frequencies.</p>
+                    <p class="mt-1">Once created, you can assign a task template to a brand and specify how often it should be performed (monthly, quarterly, twice yearly, or yearly).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

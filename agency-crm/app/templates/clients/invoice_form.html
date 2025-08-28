@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}New Invoice - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">New Invoice</h3>
+    <p class="mt-1 text-sm text-gray-500">Brand: {{ brand.name }} ({{ brand.company.name }})</p>
+</div>
+
+<div class="mt-6 max-w-3xl">
+    <form method="POST" action="" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
+            <div>
+                {{ form.company_id.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.company_id(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.company_id.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.company_id.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Select which company to invoice</p>
+                </div>
+            </div>
+
+            <div>
+                {{ form.invoice_date.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.invoice_date(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.invoice_date.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.invoice_date.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.short_info.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.short_info(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", rows=3) }}
+                    {% if form.short_info.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.short_info.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Brief description of what was invoiced</p>
+                </div>
+            </div>
+
+            <div>
+                {{ form.total_amount.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.total_amount(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.total_amount.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.total_amount.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.files.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.files(class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none", multiple=True) }}
+                    {% if form.files.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.files.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Upload invoice files (PDF or Excel). You can select multiple files. The total amount entered above applies to all files combined.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 space-x-3">
+            <a href="{{ url_for('clients.brand_detail', brand_id=brand.id) }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                Cancel
+            </a>
+            {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

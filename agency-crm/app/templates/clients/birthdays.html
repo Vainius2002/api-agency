@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Birthday Management - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">Birthday Management</h3>
+    <p class="mt-1 text-sm text-gray-500">Upcoming birthdays and gift tracking for {{ current_year }}</p>
+</div>
+
+<div class="mt-6">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Upcoming Birthdays (Next 3 Months)</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Birthday</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brands</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ current_year }} Gift</th>
+                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in upcoming_contacts %}
+                    {% set contact = item.contact %}
+                    {% set gift = item.current_year_gift %}
+                    <tr class="{% if gift %}bg-green-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">
+                                        <a href="{{ url_for('clients.contact_detail', contact_id=contact.id) }}" class="text-indigo-600 hover:text-indigo-900">
+                                            {{ contact.first_name }} {{ contact.last_name }}
+                                        </a>
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ contact.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][item.month] }} {{ contact.birthday_day }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">
+                                {% for brand in contact.brands[:2] %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mr-1">
+                                        {{ brand.name }}
+                                    </span>
+                                {% endfor %}
+                                {% if contact.brands|length > 2 %}
+                                    <span class="text-xs text-gray-500">+{{ contact.brands|length - 2 }} more</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if gift %}
+                                <div class="text-sm">
+                                    <p class="text-gray-900 font-medium">{{ gift.gift_description }}</p>
+                                    {% if gift.sent_date %}
+                                        <p class="text-xs text-gray-500">Sent: {{ gift.sent_date.strftime('%Y-%m-%d') }}</p>
+                                    {% endif %}
+                                    {% if gift.gift_value %}
+                                        <p class="text-xs text-gray-500">Value: €{{ "%.2f"|format(gift.gift_value) }}</p>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-sm text-gray-400">Not yet sent</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            {% if not gift %}
+                                <a href="{{ url_for('clients.add_gift', contact_id=contact.id) }}" class="text-indigo-600 hover:text-indigo-900">
+                                    Log Gift
+                                </a>
+                            {% else %}
+                                <span class="text-green-600">
+                                    <i class="fas fa-check-circle"></i> Done
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No upcoming birthdays in the next 3 months
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Gift History</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <div class="px-4 py-4">
+                <p class="text-sm text-gray-500">
+                    To view gift history for a specific contact, visit their contact detail page.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">Dashboard</h3>
+</div>
+
+<!-- Active Brands Table -->
+<div class="mt-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <div class="sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Active Brands Overview</h3>
+                    <p class="mt-1 text-sm text-gray-500">Comprehensive view of all active brands and their status</p>
+                </div>
+                <div class="mt-4 sm:mt-0 sm:ml-4 flex items-center space-x-3">
+                    <input type="text" id="brandFilter" placeholder="Filter by name..." 
+                           class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <select id="sortBy" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Sort by...</option>
+                        <option value="brand">Brand Name (A-Z)</option>
+                        <option value="brand-desc">Brand Name (Z-A)</option>
+                        <option value="update-asc">Last Update (oldest first)</option>
+                        <option value="update-desc">Last Update (newest first)</option>
+                        <option value="invoice-asc">Last Invoice (oldest first)</option>
+                        <option value="invoice-desc">Last Invoice (newest first)</option>
+                        <option value="meeting-asc">Last Meeting (oldest first)</option>
+                        <option value="meeting-desc">Last Meeting (newest first)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="border-t border-gray-200">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="brandsTable">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Key Responsible</th>
+                            <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Service Agreement</th>
+                            <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Data Agreement</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Update</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Invoice</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Meeting</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="brandsTableBody">
+                        {% for data in brands_data %}
+                        <tr class="hover:bg-gray-50 brand-row" 
+                            data-brand-name="{{ data.brand.name|lower }}"
+                            data-company-name="{{ data.brand.company.name|lower }}"
+                            data-subbrand-names="{% for subbrand in data.brand.subbrands %}{{ subbrand.name|lower }} {% endfor %}"
+                            data-update-days="{{ data.days_since_update or 999999 }}"
+                            data-invoice-date="{{ data.last_invoice_date.isoformat() if data.last_invoice_date else '1900-01-01' }}"
+                            data-meeting-days="{{ data.days_since_meeting or 999999 }}">
+                            <td class="px-3 py-4 whitespace-nowrap">
+                                <a href="{{ url_for('clients.brand_detail', brand_id=data.brand.id) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-900">
+                                    {{ data.brand.name }}
+                                </a>
+                                {% if data.brand.subbrands %}
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {% for subbrand in data.brand.subbrands %}
+                                        <span class="inline-block">→ {{ subbrand.name }}{% if not loop.last %}, {% endif %}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <p class="text-xs text-gray-500">{{ data.brand.company.name }}</p>
+                            </td>
+                            <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if data.key_responsible %}
+                                    {{ data.key_responsible.first_name }} {{ data.key_responsible.last_name }}
+                                {% else %}
+                                    <span class="text-gray-400">Not assigned</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-4 whitespace-nowrap text-center">
+                                {% if data.has_service_agreement %}
+                                    <i class="fas fa-check text-green-600"></i>
+                                {% else %}
+                                    <i class="fas fa-times text-red-600"></i>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-4 whitespace-nowrap text-center">
+                                {% if data.has_data_agreement %}
+                                    <i class="fas fa-check text-green-600"></i>
+                                {% else %}
+                                    <i class="fas fa-times text-red-600"></i>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-4 whitespace-nowrap text-sm">
+                                {% if data.days_since_update is not none %}
+                                    <span class="{% if data.update_overdue %}text-red-600 font-semibold{% else %}text-gray-900{% endif %}">
+                                        {{ data.days_since_update }} days ago
+                                    </span>
+                                    {% if data.last_evaluation %}
+                                        {% if data.last_evaluation == 'perfect' %}
+                                            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Perfect</span>
+                                        {% elif data.last_evaluation == 'medium' %}
+                                            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Medium</span>
+                                        {% else %}
+                                            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Risk</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-red-600 font-semibold">Never updated</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if data.last_invoice_date %}
+                                    {{ data.last_invoice_date.strftime('%Y-%m-%d') }}
+                                    <p class="text-xs text-gray-500">EUR {{ "{:,.0f}".format(data.last_invoice_amount) }}</p>
+                                {% else %}
+                                    <span class="text-gray-400">No invoices</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-4 whitespace-nowrap text-sm">
+                                {% if data.days_since_meeting is not none %}
+                                    <span class="{% if data.meeting_overdue %}text-red-600 font-semibold{% else %}text-gray-900{% endif %}">
+                                        {{ data.days_since_meeting }} days ago
+                                    </span>
+                                {% else %}
+                                    <span class="text-red-600 font-semibold">No meetings</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr id="noBrandsRow">
+                            <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                No active brands found
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInput = document.getElementById('brandFilter');
+    const sortSelect = document.getElementById('sortBy');
+    const tableBody = document.getElementById('brandsTableBody');
+    const rows = Array.from(document.querySelectorAll('.brand-row'));
+    
+    // Filter function
+    function filterBrands() {
+        const filterValue = filterInput.value.toLowerCase();
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const brandName = row.getAttribute('data-brand-name');
+            const companyName = row.getAttribute('data-company-name');
+            const subbrandNames = row.getAttribute('data-subbrand-names');
+            
+            if (brandName.includes(filterValue) || 
+                companyName.includes(filterValue) || 
+                subbrandNames.includes(filterValue)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Show/hide "no brands" message
+        const noBrandsRow = document.getElementById('noBrandsRow');
+        if (noBrandsRow) {
+            noBrandsRow.style.display = visibleCount === 0 ? '' : 'none';
+        }
+    }
+    
+    // Sort function
+    function sortBrands() {
+        const sortValue = sortSelect.value;
+        let sortedRows = [...rows];
+        
+        switch(sortValue) {
+            case 'brand':
+                sortedRows.sort((a, b) => {
+                    const aName = a.getAttribute('data-brand-name');
+                    const bName = b.getAttribute('data-brand-name');
+                    return aName.localeCompare(bName);
+                });
+                break;
+            case 'brand-desc':
+                sortedRows.sort((a, b) => {
+                    const aName = a.getAttribute('data-brand-name');
+                    const bName = b.getAttribute('data-brand-name');
+                    return bName.localeCompare(aName);
+                });
+                break;
+            case 'update-asc':
+                sortedRows.sort((a, b) => {
+                    const aDays = parseInt(a.getAttribute('data-update-days'));
+                    const bDays = parseInt(b.getAttribute('data-update-days'));
+                    return bDays - aDays; // Higher days (older) first
+                });
+                break;
+            case 'update-desc':
+                sortedRows.sort((a, b) => {
+                    const aDays = parseInt(a.getAttribute('data-update-days'));
+                    const bDays = parseInt(b.getAttribute('data-update-days'));
+                    return aDays - bDays; // Lower days (newer) first
+                });
+                break;
+            case 'invoice-asc':
+                sortedRows.sort((a, b) => {
+                    const aDate = a.getAttribute('data-invoice-date');
+                    const bDate = b.getAttribute('data-invoice-date');
+                    return aDate.localeCompare(bDate); // Older dates first
+                });
+                break;
+            case 'invoice-desc':
+                sortedRows.sort((a, b) => {
+                    const aDate = a.getAttribute('data-invoice-date');
+                    const bDate = b.getAttribute('data-invoice-date');
+                    return bDate.localeCompare(aDate); // Newer dates first
+                });
+                break;
+            case 'meeting-asc':
+                sortedRows.sort((a, b) => {
+                    const aDays = parseInt(a.getAttribute('data-meeting-days'));
+                    const bDays = parseInt(b.getAttribute('data-meeting-days'));
+                    return bDays - aDays; // Higher days (older) first
+                });
+                break;
+            case 'meeting-desc':
+                sortedRows.sort((a, b) => {
+                    const aDays = parseInt(a.getAttribute('data-meeting-days'));
+                    const bDays = parseInt(b.getAttribute('data-meeting-days'));
+                    return aDays - bDays; // Lower days (newer) first
+                });
+                break;
+            default:
+                // Reset to original order (by company and brand name)
+                sortedRows = rows;
+        }
+        
+        // Clear table body and append sorted rows
+        sortedRows.forEach(row => {
+            tableBody.appendChild(row);
+        });
+        
+        // Reapply filter after sorting
+        filterBrands();
+    }
+    
+    // Event listeners
+    filterInput.addEventListener('input', filterBrands);
+    sortSelect.addEventListener('change', sortBrands);
+});
+</script>
+{% endblock %}

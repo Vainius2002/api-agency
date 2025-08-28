@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ title }}</h3>
+</div>
+
+<div class="mt-6 max-w-3xl">
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        
+        <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
+            <div>
+                {{ form.name.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.name(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.name.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.name.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.vat_code.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.vat_code(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.vat_code.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.vat_code.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.registration_number.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.registration_number(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.registration_number.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.registration_number.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.address.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.address(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", rows=3) }}
+                    {% if form.address.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.address.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.bank_account.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.bank_account(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.bank_account.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.bank_account.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.agency_fees.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.agency_fees(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm", rows=5, placeholder="ATL planning 10%\nDigital 5%\nCreative 15%") }}
+                    {% if form.agency_fees.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.agency_fees.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Enter each fee on a new line</p>
+                </div>
+            </div>
+
+            <div>
+                {{ form.parent_company_id.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.parent_company_id(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.parent_company_id.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.parent_company_id.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Select if this is a subcompany of another company</p>
+                </div>
+            </div>
+
+            <div>
+                {{ form.status.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.status(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.status.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.status.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 space-x-3">
+            <a href="{{ url_for('clients.companies') }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                Cancel
+            </a>
+            {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

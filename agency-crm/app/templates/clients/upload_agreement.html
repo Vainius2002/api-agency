@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Agreement - Agency CRM{% endblock %}
+
+{% block content %}
+<div class="pb-5 border-b border-gray-200">
+    <h3 class="text-2xl font-semibold leading-6 text-gray-900">Upload Agreement for {{ company.name }}</h3>
+</div>
+
+<div class="mt-6 max-w-3xl">
+    <form method="POST" action="" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
+            <div>
+                {{ form.type.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.type(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.type.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.type.errors[0] }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                {{ form.valid_until.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.valid_until(class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm") }}
+                    {% if form.valid_until.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.valid_until.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">Optional: Date when this agreement expires</p>
+                </div>
+            </div>
+
+            <div>
+                {{ form.file.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1">
+                    {{ form.file(class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none") }}
+                    {% if form.file.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ form.file.errors[0] }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">PDF files only, max 16MB</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 space-x-3">
+            <a href="{{ url_for('clients.company_detail', company_id=company.id) }}" class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                Cancel
+            </a>
+            {{ form.submit(class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
