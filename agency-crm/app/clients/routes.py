@@ -19,7 +19,7 @@ from app.models import (Company, Agreement, Brand, ClientContact, BrandTeam,
                        TaskTemplate, BrandTask, TaskCompletion, Invoice, InvoiceAttachment, Subbrand)
 from app import db
 from app.webhook_helper import (notify_company_created, notify_brand_created, 
-                                notify_contact_created, notify_status_update_created)
+                                notify_contact_created, notify_contact_updated, notify_status_update_created)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -510,6 +510,10 @@ def edit_contact(contact_id):
                     contact.brands.append(brand)
         
         db.session.commit()
+        
+        # Trigger webhook for contact update
+        notify_contact_updated(contact)
+        
         flash('Contact updated successfully!', 'success')
         return redirect(url_for('clients.contact_detail', contact_id=contact.id))
     

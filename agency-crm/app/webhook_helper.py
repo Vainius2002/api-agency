@@ -65,6 +65,34 @@ def notify_contact_created(contact):
     print(f"📤 Sending webhook data: {webhook_data}")
     trigger_webhooks('contact.created', webhook_data)
 
+def notify_contact_updated(contact):
+    """Notify when a contact is updated"""
+    print(f"🔄 WEBHOOK TRIGGER: Contact updated - {contact.first_name} {contact.last_name} ({contact.email})")
+    
+    # Include brands data for proper matching in NewBusiness
+    brands_data = []
+    for brand in contact.brands:
+        brands_data.append({
+            'id': brand.id,
+            'name': brand.name
+        })
+        print(f"   - Associated with brand: {brand.name}")
+    
+    from datetime import datetime
+    
+    webhook_data = {
+        'id': contact.id,
+        'first_name': contact.first_name,
+        'last_name': contact.last_name,
+        'email': contact.email,
+        'phone': contact.phone,
+        'brands': brands_data,
+        'updated_at': datetime.utcnow().isoformat()
+    }
+    
+    print(f"📤 Sending contact update webhook data: {webhook_data}")
+    trigger_webhooks('contact.updated', webhook_data)
+
 def notify_invoice_created(invoice):
     """Notify when an invoice is created"""
     trigger_webhooks('invoice.created', {
