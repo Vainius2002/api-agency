@@ -58,6 +58,7 @@ def notify_contact_created(contact):
         'last_name': contact.last_name,
         'email': contact.email,
         'phone': contact.phone,
+        'linkedin_url': contact.linkedin_url,
         'brands': brands_data,
         'created_at': contact.created_at.isoformat() if contact.created_at else None
     }
@@ -86,6 +87,7 @@ def notify_contact_updated(contact):
         'last_name': contact.last_name,
         'email': contact.email,
         'phone': contact.phone,
+        'linkedin_url': contact.linkedin_url,
         'brands': brands_data,
         'updated_at': datetime.utcnow().isoformat()
     }

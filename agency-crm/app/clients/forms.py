@@ -97,6 +97,13 @@ class ClientContactForm(FlaskForm):
             query = query.filter(ClientContact.id != self.contact.id)
         if query.first():
             raise ValidationError('This email is already registered.')
+    
+    def validate_linkedin_url(self, linkedin_url):
+        if linkedin_url.data:
+            url = linkedin_url.data.strip()
+            # Normalize LinkedIn URLs - add https:// if missing protocol
+            if url and not url.startswith(('http://', 'https://')):
+                linkedin_url.data = 'https://' + url
 
 class BrandTeamForm(FlaskForm):
     team_members = MultiCheckboxField('Team Members', coerce=int)
