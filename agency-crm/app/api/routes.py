@@ -221,3 +221,139 @@ def trigger_webhooks(event, data):
             )
             db.session.add(log)
             db.session.commit()
+
+@api_bp.route('/webhook/newbusiness', methods=['POST'])
+def webhook_newbusiness():
+    """Receive webhooks from NewBusiness for contact updates"""
+    from flask import current_app
+    import hashlib
+    
+    # Verify signature if configured
+    signature = request.headers.get('X-Webhook-Signature')
+    event = request.headers.get('X-Webhook-Event')
+    data = request.json
+    
+    print(f"🔔 INCOMING WEBHOOK from NewBusiness: {event}")
+    print(f"📦 Data: {data}")
+    
+    # For now, we'll add signature verification later
+    # Let's focus on handling the contact update
+    
+    try:
+        if event == 'contact.updated':
+            # Update contact in Agency CRM
+            update_agency_contact(data)
+            return jsonify({'status': 'received'}), 200
+        else:
+            print(f"⚠️ Unknown event type: {event}")
+            return jsonify({'error': 'Unknown event type'}), 400
+            
+    except Exception as e:
+        current_app.logger.error(f"Webhook processing error: {str(e)}")
+        print(f"❌ Webhook error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+def update_agency_contact(contact_data):
+    """Update existing contact in Agency CRM from NewBusiness data"""
+    from app.models import ClientContact, Brand
+    
+    agency_crm_id = contact_data.get('id')
+    email = contact_data.get('email')
+    first_name = contact_data.get('first_name', '')
+    last_name = contact_data.get('last_name', '')
+    
+    print(f"🔍 Looking for contact: {first_name} {last_name} ({email}) [CRM ID: {agency_crm_id}]")
+    
+    contact = None
+    
+    # First try: Agency CRM ID match (if available)
+    if agency_crm_id:
+        contact = ClientContact.query.get(agency_crm_id)
+        if contact:
+            print(f"🎯 Found contact by Agency CRM ID {agency_crm_id}: {contact.first_name} {contact.last_name}")
+    
+    # Second try: Email match (for contacts that originated in NewBusiness)
+    if not contact and email:
+        contact = ClientContact.query.filter_by(email=email).first()
+        if contact:
+            print(f"📧 Found contact by email: {email}")
+    
+    # Third try: Name match (if email was changed)
+    if not contact and first_name and last_name:
+        contact = ClientContact.query.filter_by(
+            first_name=first_name,
+            last_name=last_name
+        ).first()
+        if contact:
+            print(f"👤 Found contact by name: {first_name} {last_name}")
+    
+    if contact:
+        print(f"🔄 Updating contact: {contact.first_name} {contact.last_name}")
+        
+        # Update contact information
+        contact.first_name = contact_data.get('first_name', contact.first_name)
+        contact.last_name = contact_data.get('last_name', contact.last_name)
+        contact.email = contact_data.get('email', contact.email)
+        contact.phone = contact_data.get('phone', contact.phone)
+        contact.linkedin_url = contact_data.get('linkedin_url', contact.linkedin_url)
+        
+        print(f"📝 Updated contact information")
+        
+        # Handle brand relationships - clear and rebuild
+        contact.brands = []  # Clear existing relationships
+        
+        for brand_data in contact_data.get('brands', []):
+            advertiser_name = brand_data['name']
+            print(f"🔍 Mapping advertiser '{advertiser_name}' to brand...")
+            
+            brand = None
+            
+            # Method 1: Try exact brand name match
+            brand = Brand.query.filter(Brand.name.ilike(f"%{advertiser_name}%")).first()
+            if brand:
+                print(f"✅ Found by brand name: {brand.name}")
+            
+            # Method 2: Try company name match (advertiser name matches brand's company name)
+            if not brand:
+                brand = Brand.query.join(Brand.company).filter(
+                    Brand.company.has(name=advertiser_name)
+                ).first()
+                if brand:
+                    print(f"✅ Found by company name: {brand.name} (Company: {brand.company.name})")
+            
+            # Method 3: Try partial company name match
+            if not brand:
+                from app.models import Company
+                # Extract key words from advertiser name for partial matching
+                key_words = advertiser_name.replace(',', '').replace('UAB', '').replace('LT', '').strip()
+                brand = Brand.query.join(Company).filter(
+                    Company.name.ilike(f"%{key_words}%")
+                ).first()
+                if brand:
+                    print(f"✅ Found by partial company match: {brand.name} (Company: {brand.company.name})")
+            
+            # Method 4: Try brand name partial match with key words
+            if not brand:
+                key_words = advertiser_name.split()[0]  # Take first word
+                brand = Brand.query.filter(Brand.name.ilike(f"%{key_words}%")).first()
+                if brand:
+                    print(f"✅ Found by partial brand match: {brand.name}")
+            
+            if brand:
+                contact.brands.append(brand)
+                print(f"🔗 Added brand relationship: {brand.name}")
+            else:
+                print(f"❌ Could not map advertiser '{advertiser_name}' to any brand")
+        
+        db.session.commit()
+        print(f"✅ Contact updated successfully in Agency CRM")
+        
+    else:
+        print(f"❌ Contact not found - cannot sync from NewBusiness")
+        print(f"   Searched by: ID={agency_crm_id}, Email={email}, Name={first_name} {last_name}")
+        
+        # Optionally create new contact in Agency CRM
+        # For now, let's just log that we couldn't find it
+
+# Make sure trigger_webhooks is available from other modules
+__all__ = ['trigger_webhooks']
